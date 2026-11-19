@@ -1,0 +1,50 @@
+{
+  "extraKnownMarketplaces": {
+    "ngavish-qa": {
+      "source": {
+        "source": "git",
+        "url": "<KIT_GIT_URL>"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "qa-kit@ngavish-qa": true
+  },
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Edit(./<TEST_SOURCE_DIR>/**)",
+      "Edit(./qa-kit-artifacts/**)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run format*)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run validate)",
+      "Bash(npm run allure:*)",
+      "Bash(npx playwright test*)",
+      "Bash(npx allure-commandline*)",
+      "mcp__atlassian__get*",
+      "mcp__atlassian__search*",
+      "mcp__atlassian__lookup*",
+      "mcp__playwright__*",
+      "mcp__figma__*",
+      "mcp__testrail__get*",
+      "mcp__glean_default__*",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch --show-current)",
+      "Bash(git rev-parse*)",
+      "Bash(git ls-files*)",
+      "Bash(git check-ignore*)",
+      "Bash(git worktree list*)",
+      "Bash(git remote show origin*)",
+      "Bash(git symbolic-ref refs/remotes/origin/HEAD*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh pr view*)",
+      "Bash(gh repo view*)",
+      "Bash(gh auth status)"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "ngavish-qa",
+  "description": "QA automation plugins: Playwright test planning, writing, healing, review and delivery.",
+  "owner": {
+    "name": "QA Automation Team"
+  },
+  "plugins": [
+    {
+      "name": "qa-kit",
+      "source": "./",
+      "description": "QA automation kit for Playwright test repos: planning, test writing, healing, review and delivery workflows."
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+name: Playwright docker run
+description: Checks out the repo, prepares Ruby/Node/AWS/ECR, builds the test image and runs the Playwright suite through docker compose. Report and Slack steps are separate actions (allure-report, slack-notify).
+
+# Composite actions cannot read secrets, the job environment or runner settings, so everything
+# sensitive arrives as an input from the calling workflow, and "runs-on", "environment" and
+# "timeout-minutes" stay on the calling job.
+
+inputs:
+  compose-service:
+    description: Name of the docker compose service that runs the tests.
+    required: true
+  compose-files:
+    description: Compose file flags, passed as-is to docker compose.
+    required: false
+    default: '-f docker-compose.ci.yml -f docker-compose.e2e.yml'
+  container-results-path:
+    description: Path inside the container where Allure results are written.
+    required: false
+    default: /test/allure-results
+  build-command:
+    description: Command that builds the test image.
+    required: false
+    default: bundle exec rake -f Rakefile.CI package
+  checkout:
+    description: '"true" to check out the repository first; "false" if the calling job already did.'
+    required: false
+    default: 'true'
+  playwright-arguments:
+    description: Raw Playwright arguments exported as PLAYWRIGHT_ARGUMENTS. Replaced by the filter script's output when that script exists.
+    required: false
+    default: ''
+  grep-script:
+    description: Repo script that turns the test-* filters into PLAYWRIGHT_ARGUMENTS. Skipped if the file does not exist.
+    required: false
+    default: scripts/build-test-grep.js
+  test-type:
+    description: Comma-separated Test Type filter (blank = no filter on this dimension).
+    required: false
+    default: ''
+  test-level:
+    description: Comma-separated Test Level filter.
+    required: false
+    default: ''
+  test-priority:
+    description: Comma-separated Test Priority filter.
+    required: false
+    default: ''
+  test-feature:
+    description: Comma-separated Test Feature filter.
+    required: false
+    default: ''
+  test-extra:
+    description: File/spec path or raw --grep expression, passed to the filter script.
+    required: false
+    default: ''
+  environment-name:
+    description: Exported as TARGET_ENVIRONMENT_NAME.
+    required: false
+    default: ''
+  environment-url:
+    description: Exported as TARGET_ENVIRONMENT_URL.
+    required: false
+    default: ''
+  ruby-version:
+    description: Ruby version used by the image build tooling.
+    required: false
+    default: '3.0'
+  bundle-gemfile:
+    description: Gemfile used by bundler (exported as BUNDLE_GEMFILE).
+    required: false
+    default: Gemfile.CI
+  fail-on-test-failure:
+    description: '"true" to fail this action when the tests fail. The default keeps the job going and reports the failure through the report and Slack steps.'
+    required: false
+    default: 'false'
+  artifactory-secret:
+    description: Exported as ARTIFACTORY_SECRET.
+    required: false
+    default: ''
+  artifactory-user:
+    description: Exported as ARTIFACTORY_USER.
+    required: false
+    default: ''
+  artifactory-npm-token:
+    description: Exported as ARTIFACTORY_NPM_TOKEN.
+    required: false
+    default: ''
+  aws-access-key-id:
+    description: AWS access key for ECR.
+    required: false
+    default: ''
+  aws-secret-access-key:
+    description: AWS secret key for ECR.
+    required: false
+    default: ''
+  aws-role-to-assume:
+    description: AWS role to assume for ECR pulls.
+    required: false
+    default: ''
+  aws-role-external-id:
+    description: External ID of the AWS role.
+    required: false
+    default: ''
+  aws-region:
+    description: AWS region of the ECR registry.
+    required: false
+    default: ''
+
+outputs:
+  test-outcome:
+    description: Outcome of the test step (success or failure).
+    value: ${{ steps.run_tests.outcome }}
+
+runs:
+  using: composite
+  steps:
+    # Clean up previous root-owned files
+    - name: Fix permissions before checkout
+      shell: bash
+      run: sudo chown -R $USER:$USER . || true
+
+    - name: Check out the repository
+      if: inputs.checkout == 'true'
+      uses: actions/checkout@v7
+
+    - name: Export test environment
+      shell: bash
+      env:
+        ARTIFACTORY_SECRET: ${{ inputs.artifactory-secret }}
+        ARTIFACTORY_USER: ${{ inputs.artifactory-user }}
+        ARTIFACTORY_NPM_TOKEN: ${{ inputs.artifactory-npm-token }}
+        TARGET_ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        TARGET_ENVIRONMENT_URL: ${{ inputs.environment-url }}
+        BUNDLE_GEMFILE: ${{ inputs.bundle-gemfile }}
+        PLAYWRIGHT_ARGUMENTS: ${{ inputs.playwright-arguments }}
+        CI_BUILD_NUMBER: ${{ github.run_number }}
+      run: |
+        # Later steps of this job (including docker compose) read these as environment variables.
+        # Empty values are skipped so anything the calling job already set is left alone.
+        for name in ARTIFACTORY_SECRET ARTIFACTORY_USER ARTIFACTORY_NPM_TOKEN TARGET_ENVIRONMENT_NAME TARGET_ENVIRONMENT_URL BUNDLE_GEMFILE PLAYWRIGHT_ARGUMENTS CI_BUILD_NUMBER; do
+          if [ -n "${!name}" ]; then
+            echo "$name=${!name}" >> "$GITHUB_ENV"
+          fi
+        done
+
+    - name: Ensure report folders exist
+      shell: bash
+      run: |
+        mkdir -p playwright-report
+        mkdir -p test-results
+        mkdir -p allure-results
+
+    - name: Setup Ruby environment
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ inputs.ruby-version }}
+        bundler-cache: true
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v6.3.0
+      with:
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+        role-to-assume: ${{ inputs.aws-role-to-assume }}
+        role-external-id: ${{ inputs.aws-role-external-id }}
+        role-session-name: ECRPush
+        role-duration-seconds: 900
+        role-skip-session-tagging: true
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: package.json
+
+    - name: Install typescript (for the tag-vocabulary loader)
+      if: hashFiles(inputs.grep-script) != ''
+      shell: bash
+      run: npm install --no-save --no-package-lock "typescript@$(node -p "require('./package.json').devDependencies.typescript")"
+
+    - name: Build PLAYWRIGHT_ARGUMENTS from structured filters
+      if: hashFiles(inputs.grep-script) != ''
+      shell: bash
+      env:
+        GREP_SCRIPT: ${{ inputs.grep-script }}
+        TEST_TYPE: ${{ inputs.test-type }}
+        TEST_LEVEL: ${{ inputs.test-level }}
+        TEST_PRIORITY: ${{ inputs.test-priority }}
+        TEST_FEATURE: ${{ inputs.test-feature }}
+        TEST_EXTRA: ${{ inputs.test-extra }}
+      run: |
+        if ! ARGS="$(node "$GREP_SCRIPT" 2>build-test-grep.err)"; then
+          echo "::error::$(cat build-test-grep.err)"
+          exit 1
+        fi
+        echo "PLAYWRIGHT_ARGUMENTS=$ARGS" >> "$GITHUB_ENV"
+        echo "FILTERS_SUMMARY=test_type='$TEST_TYPE' test_level='$TEST_LEVEL' test_priority='$TEST_PRIORITY' test_feature='$TEST_FEATURE' test_extra='$TEST_EXTRA'" >> "$GITHUB_ENV"
+
+    - name: ECR login
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Docker image
+      shell: bash
+      env:
+        BUILD_COMMAND: ${{ inputs.build-command }}
+      run: $BUILD_COMMAND
+
+    - name: Run tests via Docker Compose
+      id: run_tests
+      continue-on-error: true
+      shell: bash
+      env:
+        COMPOSE_FILES: ${{ inputs.compose-files }}
+        COMPOSE_SERVICE: ${{ inputs.compose-service }}
+        CONTAINER_RESULTS_PATH: ${{ inputs.container-results-path }}
+      run: |
+        docker compose $COMPOSE_FILES build --no-cache
+        set -o pipefail
+        docker compose $COMPOSE_FILES run --rm \
+          -v "$(pwd)/allure-results:$CONTAINER_RESULTS_PATH" \
+          "$COMPOSE_SERVICE" 2>&1 | tee playwright-run.log
+
+        echo "Fixing permissions for generated files..."
+        sudo chown -R $USER:$USER playwright-report allure-results || true
+
+    - name: Verify at least one test matched the filters
+      if: always()
+      shell: bash
+      run: |
+        if grep -q "No tests found" playwright-run.log 2>/dev/null; then
+          echo "::error::0 tests matched the selected filters ($FILTERS_SUMMARY). Failing the job - fix the filter values."
+          exit 1
+        fi
+
+    - name: Fail if tests failed
+      if: always() && inputs.fail-on-test-failure == 'true' && steps.run_tests.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::error::Tests failed - see the Allure report and the run log"
+        exit 1

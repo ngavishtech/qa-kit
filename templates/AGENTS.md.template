@@ -1,0 +1,65 @@
+# <PROJECT_NAME> - E2E Test Automation
+
+Playwright + TypeScript test automation for <PRODUCT_NAME>. AI-assisted workflows come from the `qa-kit` kit (planning, writing, healing, review, delivery). This file is read by Claude Code (through `CLAUDE.md`) and OpenCode.
+
+## Core principles
+
+1. **Smart, meaningful assertions** - every assertion has business context; no `toBeTruthy()` / `toBeGreaterThan(0)` placeholders.
+2. **Deterministic tests** - no `waitForTimeout`, no random waits, no brittle selectors; wait on conditions.
+3. **Page Object Model** - never touch `page` directly in tests or fixtures.
+4. **Factories for test data** - no inline fixtures of data.
+5. **Constants Over Magic** - No hardcoded strings, numbers, or timeouts (for values tests depend on; assertion labels and step titles stay inline - see `write-tests` -> Code Quality Rules #8)
+6. **Clean architecture** - tests, page objects, factories, helpers, constants live in separate folders.
+
+## Test writing standards
+
+- Locators: prefer role / test-id based locators; CSS selectors last.
+- Every test carries tags and Allure metadata (see `.qa-kit/project/conventions.md` for the exact order).
+- Test titles carry no case IDs (`TC-001:`); don't branch behaviour on a test's title text.
+- Clean up in `afterEach`; tests must be independent of each other.
+- New testing conventions (tags, annotations, fixtures) are documented in `README.md` in the same change.
+
+## Layout and commands
+
+See `.qa-kit/project/conventions.md` (layout, path aliases, feature enum, scripts, git rules).
+
+## Integrations
+
+- **Jira / Confluence**: `atlassian` MCP (OAuth on first use) or `glean_default` (read-only fallback; needs `GLEAN_URL` in your shell)
+- **TestRail**: `testrail` MCP - needs `TESTRAIL_URL`, `TESTRAIL_USERNAME`, `TESTRAIL_API_KEY` in your shell; location mapping in `.qa-kit/project/testrail-mapping.md`
+- **Figma**: `figma` MCP - needs `FIGMA_API_KEY` in your shell
+- **Playwright MCP**: live locator discovery and healing
+
+## Using qa-kit
+
+| Task | Claude Code | OpenCode |
+|---|---|---|
+| See everything qa-kit can do, on one screen (add a name for detail: `help feature-implement`) | `/qa-kit:help` | `/qa-kit-help` |
+| Plan one or more features (review `qa-kit-artifacts/*.md` afterwards) | `/qa-kit:feature-plan ABC-123` | `/qa-kit-feature-plan ABC-123` |
+| Write -> run/heal -> review (nothing committed unless asked: `--commit`, then `--push`, then `--pr`) | `/qa-kit:feature-implement [--level=smoke|sanity|regression] [--commit] [--push] [--pr]` | `/qa-kit-feature-implement [--level=smoke|sanity|regression] [--commit] [--push] [--pr]` |
+| Review + commit tests that already exist (what `feature-implement` left uncommitted, or a branch of your own) | `/qa-kit:feature-deliver [--push] [--pr]` | `/qa-kit-feature-deliver [--push] [--pr]` |
+| Single-feature plan, no workflow | `/qa-kit:plan-tests ABC-123` | `/qa-kit-plan-tests ABC-123` |
+| Write tests from a plan | `/qa-kit:write-tests <plan file>` | `/qa-kit-write-tests <plan file>` |
+| Review a PR | `/qa-kit:review-tests review PR #123` | `/qa-kit-review-tests review PR #123` |
+| Is it already covered / do the tests match the plan (read-only) | `/qa-kit:verify-coverage plan <plan file>` | `/qa-kit-verify-coverage plan <plan file>` |
+| Triage a failed Allure report: retest only what failed, advise per group, draft Jira tickets (never files them); `--known=<keys or JQL>` cross-checks known issues, `--heal` tunes the tests | `/qa-kit:triage-failure <report URL or folder> [--known=ABC-1,ABC-2] [--heal]` | `/qa-kit-triage-failure <report URL or folder> [--known=ABC-1,ABC-2] [--heal]` |
+| Explore an area of the running app like a monkey: understands each page first, time-boxed (default 5 min, max 30), removes the data it created, writes a report and a findings plan; never on production (`--read-only` creates nothing) | `/qa-kit:monkey-test <area> [--minutes=N] [--guidance="..."] [--read-only]`; several areas: `/qa-kit:feature-monkey <area> <area>` | `/qa-kit-monkey-test <area> [--minutes=N] [--guidance="..."] [--read-only]`; several areas: `/qa-kit-feature-monkey <area> <area>` |
+| Open a PR | `/qa-kit:create-pr` | `/qa-kit-create-pr` |
+
+Full reference: the kit's `patterns/workflows-reference.md` and `patterns/usage-examples.md`.
+
+## Setting up qa-kit on a new machine
+
+Start Claude Code or OpenCode in the folder that contains this `AGENTS.md`: the settings, MCP servers and instructions load from the folder you start in (this matters when qa-kit lives in a subfolder of a larger repo).
+
+- **Claude Code**: this repo registers the marketplace and enables the plugin in `.claude/settings.json`, but each person installs it once per machine: `claude plugin marketplace add <KIT_GIT_URL>`, then `claude plugin install qa-kit@ngavish-qa --scope user` (or `/plugin marketplace add` and `/plugin install` inside Claude Code), then restart or `/reload-plugins`. Update later with `claude plugin marketplace update ngavish-qa`, `claude plugin update qa-kit@ngavish-qa` and `/reload-plugins`.
+- **OpenCode**: if the `/qa-kit-*` commands are missing, install the kit once per machine (nothing installs automatically). Clone it outside any project repo, then install (separate lines; update later with `git -C "$HOME/.qa-kit-src" pull` and the same `install`):
+  ```
+  git clone <KIT_GIT_URL> "$HOME/.qa-kit-src"
+  node "$HOME/.qa-kit-src/tools/cli.mjs" install
+  ```
+- After a kit update, run `/qa-kit:init` (or `/qa-kit-init`) from the folder that contains this `AGENTS.md` to review and merge changes to the files qa-kit manages.
+
+## Project-specific
+
+Add anything that only applies to this repo below this line; qa-kit updates leave it alone.

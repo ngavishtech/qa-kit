@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+# Left out of the ZIP that `scripts/package-zip.sh` builds for the Claude desktop app (not plugin content).
+# tools/, runner/ and opencode/ ship: init's merge tool, the runner and the OpenCode installer all run from the plugin folder.
+/actions export-ignore
+/scripts export-ignore
+/test export-ignore
+/package.json export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/.claude export-ignore
+/.github export-ignore
+/evals export-ignore

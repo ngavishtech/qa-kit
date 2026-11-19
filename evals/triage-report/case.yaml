@@ -1,0 +1,39 @@
+schema_version: "1.1"
+name: triage-report
+description: Triage from a results folder with history, no retest. Checks the output contract, the history, the groups and that a report-only run does not overclaim.
+context:
+  scaffold_script: scaffold.sh
+graders:
+  - name: counts-line
+    type: regex
+    pattern: 'Found 4 failed tests? in 3 groups?'
+    flags: i
+  - name: history-line
+    type: regex
+    pattern: 'History:[^\n]*(in a row|consecutive|since)'
+    flags: i
+  - name: next-actions
+    type: regex
+    pattern: 'Next actions'
+    flags: i
+  - name: no-overclaim
+    type: regex
+    pattern: '\((high|medium)\)'
+    match: not_contains
+    flags: i
+  - name: triage-json
+    type: file_exists
+    path: 'qa-kit-artifacts/triage/**/triage.json'
+  - name: triage-report
+    type: file_exists
+    path: 'qa-kit-artifacts/triage/**/triage-report.md'
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?triage-failure"'
+    arm: with-only
+  - name: judgement
+    type: llm
+    criteria: |
+      PASS if the answer groups the two search tests into ONE group (same beforeEach 503 error), reports the 10k-rows export failure with a history of three consecutive runs with the same error, reports the status-filter timeout as intermittent (failed 3 of 6 earlier runs) and not as a new failure, notes that the search group is new (passed in all earlier runs), gives each group a verdict with reasons and a next action, is explicit that nothing was retested, and does not claim to have created or changed anything in Jira.
+      FAIL if the search tests are reported as separate groups, a history pattern is wrong (for example the filter test called constant or the export test called new), a verdict is stated as certain although nothing was retested, or the answer claims to have filed a ticket.

@@ -1,0 +1,14 @@
+{
+  "vars": ["KIT_GIT_URL", "TEST_SOURCE_DIR", "PROJECT_NAME", "PRODUCT_NAME"],
+  "files": [
+    { "target": "AGENTS.md", "source": "AGENTS.md.template", "kind": "text", "update": "merge", "agents": ["claude", "opencode"] },
+    { "target": "CLAUDE.md", "source": "CLAUDE.md.template", "kind": "text", "update": "merge", "agents": ["claude"] },
+    { "target": ".claude/settings.json", "source": "settings.json.template", "kind": "json", "update": "merge", "agents": ["claude"] },
+    { "target": ".mcp.json", "source": "mcp.json", "kind": "json", "update": "merge", "agents": ["claude"] },
+    { "target": "opencode.json", "source": "mcp.json", "transform": "opencode-mcp", "kind": "json", "update": "merge", "agents": ["opencode"] },
+    { "target": ".qa-kit/project/conventions.md", "source": "project/conventions.md", "legacy": ".claude/project/conventions.md", "kind": "text", "update": "merge", "agents": ["claude", "opencode"] },
+    { "target": ".qa-kit/project/testrail-mapping.md", "source": "project/testrail-mapping.md", "legacy": ".claude/project/testrail-mapping.md", "kind": "text", "update": "once", "agents": ["claude", "opencode"] },
+    { "target": ".gitignore", "source": "gitignore.lines", "kind": "lines", "update": "merge", "agents": ["claude", "opencode"] },
+    { "target": "qa-kit-artifacts/.gitignore", "source": "artifacts.gitignore", "kind": "lines", "update": "merge", "agents": ["claude", "opencode"] }
+  ]
+}

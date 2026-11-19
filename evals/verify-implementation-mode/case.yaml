@@ -1,0 +1,28 @@
+schema_version: "1.1"
+name: verify-implementation-mode
+description: Implementation mode reports a missing scenario as Blocking and an unasserted result as Should fix.
+context:
+  scaffold_script: scaffold.sh
+graders:
+  - name: missing
+    type: regex
+    pattern: 'TC-003[^\n]*(missing|no test)'
+    flags: i
+  - name: weak
+    type: regex
+    pattern: 'TC-002[^\n]*(weak|not asserted|no assertion)'
+    flags: i
+  - name: covered
+    type: regex
+    pattern: 'TC-001[^\n]*covered'
+    flags: i
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-coverage"'
+    arm: with-only
+  - name: severity
+    type: llm
+    criteria: |
+      PASS if the answer treats the missing coupon scenario (TC-003) as Blocking and says it needs a new test written (write-tests), treats the unasserted results of TC-002 (empty-cart message, badge) as Should fix with the assertion to add, lists TC-001 as covered, and does not claim to have edited the spec.
+      FAIL if TC-003 is called covered, the answer invents a test for it, TC-002 is called fully covered, or it says it changed a file.

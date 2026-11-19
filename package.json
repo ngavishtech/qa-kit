@@ -1,0 +1,15 @@
+{
+  "name": "qa-kit",
+  "private": true,
+  "description": "QA kit for Playwright repos - Claude Code plugin and OpenCode install",
+  "bin": {
+    "qa-kit": "tools/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "eval": "claude plugin eval . --scaffold --ablation none --no-publish --allow-tools Write --judge-model sonnet --max-cost-usd 10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,471 @@
+name: "VUTEF Run"
+run-name: "VUTEF <REPLACE: repo name> on ${{ github.event.inputs.environment || 'SCHEDULED/PUSH-RUN' }}"
+
+# Copy-paste version of a full VUTEF Playwright run: Docker build and run, Allure report on GitHub
+# Pages, Slack message. Copy to .github/workflows/vutef-run.yml in your repo and replace every
+# <REPLACE ...> and <ADD ...> marker (search for "<"). The three places to edit:
+#
+#   1. run-name (line 2)            your repo name
+#   2. job env block                your project's own vars and secrets (see below)
+#   3. "Run tests via Docker Compose" step and "Post to Slack" step: the compose service name,
+#      the Slack channel id and the message title
+#   4. "Publish report to gh-pages" step: INDEX_TITLE (heading of the report landing page) and,
+#      if you want another retention, KEEP_DAYS / KEEP_RUNS
+#
+# What your repo must provide (this workflow assumes them, it does not create them):
+#   - Gemfile.CI and Rakefile.CI with a `package` task that builds the test image
+#   - docker-compose.ci.yml and docker-compose.e2e.yml, with a service that runs the tests, whose
+#     entrypoint prints "ENTRYPOINT >> Arguments passed: <args>" and passes the args to Playwright
+#   - scripts/build-test-grep.js: reads TEST_TYPE / TEST_LEVEL / TEST_PRIORITY / TEST_FEATURE /
+#     TEST_EXTRA from the environment and prints the Playwright arguments (the filter inputs below
+#     are only useful together with it)
+#   - typescript in package.json devDependencies (installed for that script's tag loader)
+#   - Allure results written to ./allure-results by the tests
+#   - the three scripts in scripts/: publish-allure-report.sh, allure-index.js, cleanup-gh-pages.sh
+#     (copy them from actions/allure-archive/scripts/ in qa-kit, keep them LF: `scripts/*.sh text eol=lf`
+#     in .gitattributes) and `allure-report-single/` in .gitignore, .prettierignore and the eslint ignores
+#   - GitHub Pages enabled: Settings -> Pages -> Deploy from a branch -> gh-pages / (root). The branch is a
+#     DATA branch (one folder per run); the first run creates it. No branch ruleset may block force-push
+#     on it. Full explanation, retention and cleanup: actions/allure-archive/README.md in qa-kit
+#   - repo secrets: ARTIFACTORY_SECRET, ARTIFACTORY_USER, ARTIFACTORY_NPM_TOKEN, ECR_AWS_ACCESS_KEY,
+#     ECR_AWS_SECRET_ACCESS_KEY, ECR_PULL_AWS_ROLE_TO_ASSUME, ECR_PULL_AWS_ROLE_EXTERNAL_ID,
+#     ECR_PULL_AWS_REGION, ALERT_BOT_TOKEN
+#   - repo variable: DEFAULT_LINUX_RUNNER_LABEL
+#   - one GitHub Environment per option of the `environment` input, holding that environment's
+#     vars and secrets (the project-specific ones from the job env block)
+#   - optional repo variables NIGHTLY_TEST_TYPE / _LEVEL / _PRIORITY / _FEATURE / _EXTRA to scope the
+#     scheduled run (all blank = full suite)
+#
+# Scheduled and manual runs always use the default branch's copy of this file.
+
+on:
+  schedule:
+    # Daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment to run tests against
+        default: test01
+        options:
+          - test01
+          - test02
+        required: true
+      test_type:
+        description: >
+          Comma-separated Test Type values (AND with other filters, OR within this list).
+          Valid: ui, api, performance, a11y (Blank = no filter on this dimension).
+        required: false
+      test_level:
+        description: >
+          Comma-separated Test Level values.
+          Valid: smoke, sanity, regression (Blank = no filter on this dimension).
+        required: false
+      test_priority:
+        description: >
+          Comma-separated Test Priority values.
+          Valid: critical, high, medium, low (Blank = no filter on this dimension).
+        required: false
+      test_feature:
+        description: >
+          Comma-separated Test Feature values.
+          Valid values are defined by your repo's tag vocabulary (Blank = no filter on this dimension).
+        required: false
+      test_extra:
+        description: >
+          Advanced escape hatch - a file/spec path (e.g. src/tests/ui/<folder>/), ANDed with the
+          filters above. For a one-off raw --grep expression instead, leave the four filters above
+          blank and put a full --grep "..." here (it will NOT be ANDed with a generated one).
+          Not the primary way to select tests - prefer the structured filters above.
+        required: false
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.event.inputs.environment || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  ARTIFACTORY_SECRET: ${{ secrets.ARTIFACTORY_SECRET }}
+  ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+  ARTIFACTORY_NPM_TOKEN: ${{ secrets.ARTIFACTORY_NPM_TOKEN }}
+  CI_BUILD_NUMBER: ${{ github.run_number }}
+  BUNDLE_GEMFILE: "Gemfile.CI"
+
+jobs:
+  build-and-run:
+    timeout-minutes: 120
+    runs-on: ${{ vars.DEFAULT_LINUX_RUNNER_LABEL }}
+    environment: ${{ inputs.environment || 'test01' }}
+    env:
+      TARGET_ENVIRONMENT_NAME: ${{ inputs.environment || 'test01' }}
+      TARGET_ENVIRONMENT_MODE: ${{ vars.TARGET_ENVIRONMENT_MODE }}
+      TARGET_ENVIRONMENT_URL: ${{ vars.TARGET_ENVIRONMENT_URL }}
+      # <ADD YOUR VARS/SECRETS HERE> - everything your tests read from the environment, one line each,
+      # defined per GitHub Environment (Settings -> Environments). Variables: ${{ vars.NAME }},
+      # secrets: ${{ secrets.NAME }}. Example:
+      #   MY_API_URL: ${{ vars.MY_API_URL }}
+      #   MY_API_PASSWORD: ${{ secrets.MY_API_PASSWORD }}
+    steps:
+      # Clean up previous root-owned files
+      - name: Fix permissions before checkout
+        run: sudo chown -R $USER:$USER . || true
+
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
+
+      - name: Ensure report folders exist
+        run: |
+          mkdir -p playwright-report
+          mkdir -p test-results
+          mkdir -p allure-results
+
+      - name: Setup Ruby environment
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+          bundler-cache: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.ECR_PULL_AWS_ROLE_TO_ASSUME }}
+          role-external-id: ${{ secrets.ECR_PULL_AWS_ROLE_EXTERNAL_ID }}
+          role-session-name: ECRPush
+          role-duration-seconds: 900
+          role-skip-session-tagging: true
+          aws-region: ${{ secrets.ECR_PULL_AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+
+      - name: Install typescript (for the tag-vocabulary loader)
+        run: npm install --no-save --no-package-lock "typescript@$(node -p "require('./package.json').devDependencies.typescript")"
+
+      - name: Build PLAYWRIGHT_ARGUMENTS from structured filters
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          # workflow_dispatch: from the human/API-supplied inputs
+          DISPATCH_TEST_TYPE: ${{ inputs.test_type }}
+          DISPATCH_TEST_LEVEL: ${{ inputs.test_level }}
+          DISPATCH_TEST_PRIORITY: ${{ inputs.test_priority }}
+          DISPATCH_TEST_FEATURE: ${{ inputs.test_feature }}
+          DISPATCH_TEST_EXTRA: ${{ inputs.test_extra }}
+          # schedule: from repo Settings -> Secrets and variables -> Actions -> Variables.
+          # Blank/unset = full suite (today's behavior). Set e.g. NIGHTLY_TEST_TYPE=api to scope
+          # the nightly cron run to "API at all levels", or =ui for "UI at all levels".
+          NIGHTLY_TEST_TYPE: ${{ vars.NIGHTLY_TEST_TYPE }}
+          NIGHTLY_TEST_LEVEL: ${{ vars.NIGHTLY_TEST_LEVEL }}
+          NIGHTLY_TEST_PRIORITY: ${{ vars.NIGHTLY_TEST_PRIORITY }}
+          NIGHTLY_TEST_FEATURE: ${{ vars.NIGHTLY_TEST_FEATURE }}
+          NIGHTLY_TEST_EXTRA: ${{ vars.NIGHTLY_TEST_EXTRA }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            export TEST_TYPE="$DISPATCH_TEST_TYPE"
+            export TEST_LEVEL="$DISPATCH_TEST_LEVEL"
+            export TEST_PRIORITY="$DISPATCH_TEST_PRIORITY"
+            export TEST_FEATURE="$DISPATCH_TEST_FEATURE"
+            export TEST_EXTRA="$DISPATCH_TEST_EXTRA"
+          else
+            export TEST_TYPE="$NIGHTLY_TEST_TYPE"
+            export TEST_LEVEL="$NIGHTLY_TEST_LEVEL"
+            export TEST_PRIORITY="$NIGHTLY_TEST_PRIORITY"
+            export TEST_FEATURE="$NIGHTLY_TEST_FEATURE"
+            export TEST_EXTRA="$NIGHTLY_TEST_EXTRA"
+          fi
+
+          # One-line scope for the Slack message, in the style of the Results row. Only categories that are
+          # set appear. Values are user input going into a YAML payload, so strip quotes, backslashes,
+          # newlines and Slack link characters, and trim blanks. A value longer than the cap is cut and marked
+          # with an ellipsis (a long list of features alone can run to a couple of hundred characters, so the
+          # cap is well above any real scope).
+          MAX_VALUE_LENGTH=300
+          clean() { printf '%s' "$1" | tr -d '\015\012"\134<>&' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+          SCOPE=""
+          add_scope() {
+            v="$(clean "$3")"
+            if [ -n "$v" ]; then
+              if [ "${#v}" -gt "$MAX_VALUE_LENGTH" ]; then v="${v:0:$MAX_VALUE_LENGTH}…"; fi
+              SCOPE="${SCOPE:+$SCOPE  }$1 $2: $v"
+            fi
+            return 0
+          }
+          add_scope "🧪" Type "$TEST_TYPE"
+          add_scope "🎚" Level "$TEST_LEVEL"
+          add_scope "⚡" Priority "$TEST_PRIORITY"
+          add_scope "🧩" Feature "$TEST_FEATURE"
+          add_scope "🔎" Extra "$TEST_EXTRA"
+          echo "SCOPE_SUMMARY=${SCOPE:-🧪 Full suite (no filters)}" >> "$GITHUB_ENV"
+
+          echo "BRANCH_LABEL=$(printf '%s' "$GITHUB_REF_NAME" | tr -d '"<>&')" >> "$GITHUB_ENV"
+
+          if ! ARGS="$(node scripts/build-test-grep.js 2>build-test-grep.err)"; then
+            echo "::error::$(cat build-test-grep.err)"
+            exit 1
+          fi
+          echo "PLAYWRIGHT_ARGUMENTS=$ARGS" >> "$GITHUB_ENV"
+          echo "FILTERS_SUMMARY=test_type='$TEST_TYPE' test_level='$TEST_LEVEL' test_priority='$TEST_PRIORITY' test_feature='$TEST_FEATURE' test_extra='$TEST_EXTRA'" >> "$GITHUB_ENV"
+
+      - name: ECR login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        id: build_test_image
+        run: bundle exec rake -f Rakefile.CI package
+
+      - name: Run tests via Docker Compose
+        id: run_tests
+        continue-on-error: true
+        run: |
+          docker compose -f docker-compose.ci.yml -f docker-compose.e2e.yml build --no-cache
+          set -o pipefail
+          # -v maps the allure-results folder from inside the container to outside
+          # <REPLACE: docker compose service name that runs your tests>
+          docker compose -f docker-compose.ci.yml -f docker-compose.e2e.yml run --rm \
+            -v $(pwd)/allure-results:/test/allure-results \
+            <REPLACE: compose service name> 2>&1 | tee playwright-run.log
+
+          # Fix permissions for BOTH report folders so we can read them
+          echo "Fixing permissions for generated files..."
+          sudo chown -R $USER:$USER playwright-report allure-results || true
+
+      - name: Verify the scope reached the test runner
+        if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        run: |
+          LOG=playwright-run.log
+          RECEIVED_LINE="$(grep -m1 'ENTRYPOINT >> Arguments passed:' "$LOG" 2>/dev/null || true)"
+          RECEIVED="$(printf '%s' "$RECEIVED_LINE" | sed 's/.*Arguments passed:[[:space:]]*//' | tr -d '\r')"
+          EXECUTED="$(grep -m1 -oE 'Running [0-9]+ tests?' "$LOG" 2>/dev/null || true)"
+
+          echo "Requested : ${PLAYWRIGHT_ARGUMENTS:-<none - full suite>}"
+          echo "Received  : ${RECEIVED:-<empty>}"
+          echo "Executed  : ${EXECUTED:-<no 'Running N tests' line found>}"
+
+          if [ -n "$PLAYWRIGHT_ARGUMENTS" ]; then
+            if [ -z "$RECEIVED_LINE" ]; then
+              echo "::warning::Could not find the entrypoint's 'Arguments passed' line in the log, so the scope could not be verified."
+            elif [ -z "$RECEIVED" ]; then
+              echo "::error::Scope not applied: requested '$PLAYWRIGHT_ARGUMENTS' but the test container received no arguments, so the whole suite ran."
+              exit 1
+            fi
+          fi
+
+      - name: Verify at least one test matched the filters
+        if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        run: |
+          if grep -q "No tests found" playwright-run.log 2>/dev/null; then
+            echo "::error::0 tests matched the selected filters ($FILTERS_SUMMARY). Failing the job - fix the filter values."
+            exit 1
+          fi
+
+      # --- Allure Reporting Steps ---
+
+      # gh-pages is a DATA-ONLY branch (the Pages source): per-run reports + a landing page, written by
+      # scripts/publish-allure-report.sh. Everything else lives on the default branch. If the branch is
+      # missing the checkout fails (hence continue-on-error) and the publish step recreates it.
+      - name: Load Allure History
+        uses: actions/checkout@v7
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+          persist-credentials: true
+
+      - name: Setup Java
+        if: always()
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate Allure Report
+        if: always()
+        id: generate_report
+        run: |
+          # Defaults in case this step exits early (no results at all)
+          echo "passed=N/A"        >> "$GITHUB_OUTPUT"
+          echo "failed=N/A"        >> "$GITHUB_OUTPUT"
+          echo "broken=N/A"        >> "$GITHUB_OUTPUT"
+          echo "skipped=N/A"       >> "$GITHUB_OUTPUT"
+          echo "total=N/A"         >> "$GITHUB_OUTPUT"
+          echo "executed=N/A"      >> "$GITHUB_OUTPUT"
+          echo "success_rate=N/A"  >> "$GITHUB_OUTPUT"
+
+          # Check if results exist before generating
+          if [ ! -d "allure-results" ] || [ -z "$(ls -A allure-results)" ]; then
+             echo "Error: allure-results directory is missing or empty!"
+             # List current directory to debug
+             ls -la
+             exit 1
+          fi
+
+          # Allure 2 builds the trend from <results>/history, so the previous report's history must be in
+          # place BEFORE generating (copying it into the finished report does nothing). History is kept
+          # per environment, so trends never mix environments.
+          HISTORY_SRC="gh-pages/${TARGET_ENVIRONMENT_NAME}/latest/history"
+          if [ -d "$HISTORY_SRC" ]; then
+            mkdir -p allure-results/history && cp -a "$HISTORY_SRC/." allure-results/history/ \
+              || echo "::warning::Could not seed Allure history - the trend restarts with this run."
+          else
+            echo "No previous history for ${TARGET_ENVIRONMENT_NAME} - the trend starts with this run."
+          fi
+
+          # Generate report from the separate allure-results folder
+          npx allure-commandline generate allure-results --clean -o allure-report
+
+          # Collect statistics
+            if [ -f "allure-report/export/prometheusData.txt" ]; then
+              PASSED=$(grep '^launch_status_passed' allure-report/export/prometheusData.txt | awk '{print $2}')
+              FAILED=$(grep '^launch_status_failed' allure-report/export/prometheusData.txt | awk '{print $2}')
+              BROKEN=$(grep '^launch_status_broken' allure-report/export/prometheusData.txt | awk '{print $2}')
+              SKIPPED=$(grep '^launch_status_skipped' allure-report/export/prometheusData.txt | awk '{print $2}')
+              UNKNOWN=$(grep '^launch_status_unknown' allure-report/export/prometheusData.txt | awk '{print $2}')
+            else
+              PASSED=0; FAILED=0; BROKEN=0; SKIPPED=0; UNKNOWN=0
+            fi
+            PASSED=${PASSED:-0}
+            FAILED=${FAILED:-0}
+            BROKEN=${BROKEN:-0}
+            SKIPPED=${SKIPPED:-0}
+            UNKNOWN=${UNKNOWN:-0}
+            EXECUTED=$((PASSED + FAILED + BROKEN + UNKNOWN))
+            TOTAL=$((EXECUTED + SKIPPED))
+
+            if [ "$EXECUTED" -gt 0 ]; then
+              RATE=$(awk -v p="$PASSED" -v t="$EXECUTED" 'BEGIN { printf "%.1f", int((p/t)*1000)/10 }')
+              SUCCESS_RATE="${RATE}%"
+            else
+              SUCCESS_RATE="N/A"
+            fi
+
+            echo "passed=$PASSED"             >> "$GITHUB_OUTPUT"
+            echo "failed=$FAILED"             >> "$GITHUB_OUTPUT"
+            echo "broken=$BROKEN"             >> "$GITHUB_OUTPUT"
+            echo "skipped=$SKIPPED"           >> "$GITHUB_OUTPUT"
+            echo "total=$TOTAL"               >> "$GITHUB_OUTPUT"
+            echo "executed=$EXECUTED"         >> "$GITHUB_OUTPUT"
+            echo "success_rate=$SUCCESS_RATE" >> "$GITHUB_OUTPUT"
+
+      # A private repo's Pages site lives on a generated domain, not <owner>.github.io/<repo>, so ask the API.
+      - name: Resolve GitHub Pages URL
+        id: pages_url
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGES_API: ${{ github.api_url }}/repos/${{ github.repository }}/pages
+          FALLBACK_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          BASE="$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$PAGES_API" \
+            | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).html_url" 2>/dev/null || true)"
+          if [ -z "$BASE" ] || [ "$BASE" = "undefined" ]; then
+            echo "::warning::Could not read the Pages URL from the API - falling back to $FALLBACK_URL"
+            BASE="$FALLBACK_URL"
+          fi
+          echo "base_url=${BASE%/}" >> "$GITHUB_OUTPUT"
+
+      # One permanent folder per run (<environment>/<run number>/) plus <environment>/latest/ and a landing page.
+      # Only the report generated above is published, so skip it when generation itself failed.
+      - name: Publish report to gh-pages
+        id: publish
+        if: always() && steps.generate_report.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPORT_DIR: allure-report
+          PAGES_DIR: gh-pages
+          REPORT_SUBDIR: ${{ env.TARGET_ENVIRONMENT_NAME }}
+          RUN_ID: ${{ github.run_number }}
+          INDEX_TITLE: "<REPLACE: heading of the report landing page, e.g. the repo name>"
+          KEEP_DAYS: 60 # run folders older than this are removed from every environment, 0 = no age limit
+          KEEP_RUNS: 0 # optional extra cap of newest runs kept per environment, 0 = no cap
+          PAGES_BASE_URL: ${{ steps.pages_url.outputs.base_url }}
+          SUMMARY_ATTEMPT: ${{ github.run_attempt }}
+          SUMMARY_BRANCH: ${{ env.BRANCH_LABEL || github.ref_name }}
+          SUMMARY_TRIGGER: ${{ github.event_name }}
+          SUMMARY_SCOPE: ${{ env.SCOPE_SUMMARY || '🧪 Full suite (no filters)' }}
+          SUMMARY_TOTAL: ${{ steps.generate_report.outputs.total }}
+          SUMMARY_PASSED: ${{ steps.generate_report.outputs.passed }}
+          SUMMARY_FAILED: ${{ steps.generate_report.outputs.failed }}
+          SUMMARY_BROKEN: ${{ steps.generate_report.outputs.broken }}
+          SUMMARY_SKIPPED: ${{ steps.generate_report.outputs.skipped }}
+          SUMMARY_SUCCESS_RATE: ${{ steps.generate_report.outputs.success_rate }}
+          SUMMARY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/publish-allure-report.sh
+
+      # A normal Allure 2 report loads its data over HTTP, so a downloaded copy shows a blank page when opened
+      # from disk. --single-file embeds everything (data, attachments, traces) in one index.html that opens by
+      # double-click. Built from the same results (history already seeded), so it shows the same trend.
+      - name: Generate single-file Allure report (for the artifact)
+        id: single_report
+        if: always() && steps.generate_report.outcome == 'success'
+        continue-on-error: true
+        run: npx allure-commandline generate allure-results --single-file --clean -o allure-report-single
+
+      # Artifacts Upload
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.single_report.outcome == 'success'
+        with:
+          name: allure-report-${{ steps.date.outputs.date }}
+          path: allure-report-single/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: allure-results-${{ steps.date.outputs.date }}
+          path: allure-results/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-${{ steps.date.outputs.date }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Post to Slack
+        if: always()
+        id: slack
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          payload: |
+            channel: "<REPLACE: Slack channel id, e.g. C0123456789>"
+            text: "VUTEF Playwright <REPLACE: repo name> Test Run"
+            attachments:
+              - color: "${{ steps.run_tests.outcome == 'success' && '#36a64f' || '#d92121' }}"
+                blocks:
+                  - type: "section"
+                    fields:
+                      - type: "mrkdwn"
+                        text: "*Status:*\n${{ steps.run_tests.outcome == 'success' && 'Passed' || steps.run_tests.outcome == 'cancelled' && 'Cancelled' || 'Failed' }} (🎯 ${{ steps.generate_report.outputs.success_rate }} Pass Rate)"
+                      - type: "mrkdwn"
+                        text: "*Tested on:*\n${{ env.TARGET_ENVIRONMENT_NAME }}"
+                  - type: "section"
+                    fields:
+                      - type: "mrkdwn"
+                        text: "<${{ steps.publish.outputs.report_url || steps.pages_url.outputs.base_url }}|Allure Report> (<${{ steps.pages_url.outputs.base_url }}|all runs>)"
+                      - type: "mrkdwn"
+                        text: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Run Details> (Branch: ${{ env.BRANCH_LABEL || 'N/A' }})"
+                  - type: "section"
+                    text:
+                      type: "mrkdwn"
+                      text: "*Scope:*\n${{ env.SCOPE_SUMMARY || 'N/A' }}"
+                  - type: "section"
+                    fields:
+                      - type: "mrkdwn"
+                        text: "*Results:*\n📊 ${{ steps.generate_report.outputs.total }} total  ▶️ ${{ steps.generate_report.outputs.executed }} executed\n✅ ${{ steps.generate_report.outputs.passed }} passed  ❌ ${{ steps.generate_report.outputs.failed }} failed  ⏭ ${{ steps.generate_report.outputs.skipped }} skipped  ⚠️ ${{ steps.generate_report.outputs.broken }} broken"
+          method: chat.postMessage
+          token: ${{ secrets.ALERT_BOT_TOKEN }}

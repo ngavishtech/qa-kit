@@ -1,0 +1,187 @@
+name: Allure report
+description: Generates an Allure report from allure-results, exposes pass/fail counts as outputs, optionally publishes it to GitHub Pages with run history, and uploads the raw results as artifacts.
+
+inputs:
+  results-dir:
+    description: Folder containing the Allure results produced by the test run.
+    required: false
+    default: allure-results
+  report-dir:
+    description: Folder the generated HTML report is written to.
+    required: false
+    default: allure-report
+  playwright-report-dir:
+    description: Playwright HTML report folder to upload as an artifact (skipped if it does not exist).
+    required: false
+    default: playwright-report
+  publish:
+    description: '"true" to publish the report to the Pages branch and keep run history.'
+    required: false
+    default: 'true'
+  pages-branch:
+    description: Branch that GitHub Pages serves from.
+    required: false
+    default: gh-pages
+  github-token:
+    description: Token used to push to the Pages branch. Required when publish is "true".
+    required: false
+    default: ''
+  java-version:
+    description: Java version for the Allure CLI.
+    required: false
+    default: '17'
+  upload-artifacts:
+    description: '"true" to upload the Allure results and the Playwright report as artifacts.'
+    required: false
+    default: 'true'
+  retention-days:
+    description: Artifact retention in days.
+    required: false
+    default: '30'
+
+outputs:
+  total:
+    description: Total number of tests ("N/A" if no report could be produced).
+    value: ${{ steps.generate.outputs.total }}
+  passed:
+    description: Number of passed tests.
+    value: ${{ steps.generate.outputs.passed }}
+  failed:
+    description: Number of failed tests.
+    value: ${{ steps.generate.outputs.failed }}
+  broken:
+    description: Number of broken tests.
+    value: ${{ steps.generate.outputs.broken }}
+  skipped:
+    description: Number of skipped tests.
+    value: ${{ steps.generate.outputs.skipped }}
+  success-rate:
+    description: Pass rate, for example "97%".
+    value: ${{ steps.generate.outputs.success_rate }}
+  report-url:
+    description: GitHub Pages URL of the published report (empty if publish is not "true").
+    value: ${{ steps.url.outputs.report-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get current date
+      id: date
+      if: always()
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M')" >> "$GITHUB_OUTPUT"
+
+    - name: Load Allure history
+      if: always() && inputs.publish == 'true'
+      uses: actions/checkout@v7
+      continue-on-error: true
+      with:
+        ref: ${{ inputs.pages-branch }}
+        path: gh-pages
+
+    - name: Setup Java
+      if: always()
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+
+    - name: Generate Allure report
+      id: generate
+      if: always()
+      shell: bash
+      env:
+        RESULTS_DIR: ${{ inputs.results-dir }}
+        REPORT_DIR: ${{ inputs.report-dir }}
+      run: |
+        # Defaults in case this step exits early (no results at all)
+        echo "passed=N/A"        >> "$GITHUB_OUTPUT"
+        echo "failed=N/A"        >> "$GITHUB_OUTPUT"
+        echo "broken=N/A"        >> "$GITHUB_OUTPUT"
+        echo "skipped=N/A"       >> "$GITHUB_OUTPUT"
+        echo "total=N/A"         >> "$GITHUB_OUTPUT"
+        echo "success_rate=N/A"  >> "$GITHUB_OUTPUT"
+
+        if [ ! -d "$RESULTS_DIR" ] || [ -z "$(ls -A "$RESULTS_DIR")" ]; then
+          echo "::error::$RESULTS_DIR is missing or empty - nothing to report"
+          ls -la
+          exit 1
+        fi
+
+        npx allure-commandline generate "$RESULTS_DIR" --clean -o "$REPORT_DIR"
+
+        STATS="$REPORT_DIR/export/prometheusData.txt"
+        if [ -f "$STATS" ]; then
+          PASSED=$(grep '^launch_status_passed' "$STATS" | awk '{print $2}')
+          FAILED=$(grep '^launch_status_failed' "$STATS" | awk '{print $2}')
+          BROKEN=$(grep '^launch_status_broken' "$STATS" | awk '{print $2}')
+          SKIPPED=$(grep '^launch_status_skipped' "$STATS" | awk '{print $2}')
+          UNKNOWN=$(grep '^launch_status_unknown' "$STATS" | awk '{print $2}')
+        else
+          PASSED=0; FAILED=0; BROKEN=0; SKIPPED=0; UNKNOWN=0
+        fi
+        PASSED=${PASSED:-0}
+        FAILED=${FAILED:-0}
+        BROKEN=${BROKEN:-0}
+        SKIPPED=${SKIPPED:-0}
+        UNKNOWN=${UNKNOWN:-0}
+        TOTAL=$((PASSED + FAILED + BROKEN + SKIPPED + UNKNOWN))
+
+        if [ "$TOTAL" -gt 0 ]; then
+          RATE=$(awk -v p="$PASSED" -v t="$TOTAL" 'BEGIN { printf "%.0f", (p/t)*100 }')
+          SUCCESS_RATE="${RATE}%"
+        else
+          SUCCESS_RATE="N/A"
+        fi
+
+        echo "passed=$PASSED"             >> "$GITHUB_OUTPUT"
+        echo "failed=$FAILED"             >> "$GITHUB_OUTPUT"
+        echo "broken=$BROKEN"             >> "$GITHUB_OUTPUT"
+        echo "skipped=$SKIPPED"           >> "$GITHUB_OUTPUT"
+        echo "total=$TOTAL"               >> "$GITHUB_OUTPUT"
+        echo "success_rate=$SUCCESS_RATE" >> "$GITHUB_OUTPUT"
+
+        if [ -d "gh-pages/history" ]; then
+          cp -r gh-pages/history "$REPORT_DIR/history"
+        fi
+
+    - name: Compute report URL
+      id: url
+      if: always()
+      shell: bash
+      env:
+        PUBLISH: ${{ inputs.publish }}
+        OWNER: ${{ github.repository_owner }}
+        REPO_NAME: ${{ github.event.repository.name }}
+      run: |
+        if [ "$PUBLISH" = "true" ]; then
+          echo "report-url=https://${OWNER}.github.io/${REPO_NAME}" >> "$GITHUB_OUTPUT"
+        else
+          echo "report-url=" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Deploy report to GitHub Pages
+      if: always() && inputs.publish == 'true'
+      uses: peaceiris/actions-gh-pages@v4.1.0
+      with:
+        github_token: ${{ inputs.github-token }}
+        publish_dir: ${{ inputs.report-dir }}
+        publish_branch: ${{ inputs.pages-branch }}
+        keep_files: true
+
+    - name: Upload Allure results
+      if: always() && inputs.upload-artifacts == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: allure-results-${{ steps.date.outputs.date }}
+        path: ${{ inputs.results-dir }}/
+        retention-days: ${{ inputs.retention-days }}
+
+    - name: Upload Playwright report
+      if: always() && inputs.upload-artifacts == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: playwright-report-${{ steps.date.outputs.date }}
+        path: ${{ inputs.playwright-report-dir }}/
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ignore

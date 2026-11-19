@@ -1,0 +1,10 @@
+{
+  "name": "qa-kit",
+  "version": "0.8.0",
+  "repository": "https://github.com/ngavishtech/qa-kit",
+  "description": "QA automation kit for Playwright test repos: plan tests from Jira/Figma/TestRail, write and heal Playwright tests, review, commit and open PRs. Skills, agents, commands and parallel feature workflows.",
+  "author": {
+    "name": "QA Automation Team"
+  },
+  "keywords": ["qa", "playwright", "test-automation", "jira", "testrail", "workflows", "opencode", "claude-code"]
+}

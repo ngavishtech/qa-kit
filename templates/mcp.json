@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "atlassian": {
+      "type": "sse",
+      "url": "https://mcp.atlassian.com/v1/sse"
+    },
+    "testrail": {
+      "command": "npx",
+      "args": ["-y", "@bun913/mcp-testrail@latest"],
+      "env": {
+        "TESTRAIL_URL": "${TESTRAIL_URL}",
+        "TESTRAIL_USERNAME": "${TESTRAIL_USERNAME}",
+        "TESTRAIL_API_KEY": "${TESTRAIL_API_KEY}"
+      }
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp@latest", "--stdio"],
+      "env": {
+        "FIGMA_API_KEY": "${FIGMA_API_KEY}"
+      }
+    },
+    "glean_default": {
+      "type": "http",
+      "url": "${GLEAN_URL}"
+    }
+  }
+}

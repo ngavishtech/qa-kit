@@ -1,0 +1,80 @@
+name: Slack test-run notification
+description: Posts a Playwright test-run summary (status, environment, result counts, report and run links) to a Slack channel with chat.postMessage.
+
+inputs:
+  token:
+    description: Slack bot token. Pass a secret - composite actions cannot read secrets themselves.
+    required: true
+  channel:
+    description: Slack channel ID (for example C0123456789), not the channel name.
+    required: true
+  title:
+    description: Message headline. Avoid double quotes - it is embedded in a YAML payload.
+    required: false
+    default: Playwright test run
+  status:
+    description: Outcome of the test step. "success" renders green, anything else (failure, cancelled, skipped) renders red.
+    required: true
+  environment:
+    description: Name of the environment that was tested.
+    required: false
+    default: n/a
+  total:
+    description: Total number of tests.
+    required: false
+    default: 'N/A'
+  passed:
+    description: Number of passed tests.
+    required: false
+    default: 'N/A'
+  failed:
+    description: Number of failed tests.
+    required: false
+    default: 'N/A'
+  broken:
+    description: Number of broken tests.
+    required: false
+    default: 'N/A'
+  skipped:
+    description: Number of skipped tests.
+    required: false
+    default: 'N/A'
+  success-rate:
+    description: Pass rate, for example "97%".
+    required: false
+    default: 'N/A'
+  report-url:
+    description: Link to the published report. Leave empty to show "No report published".
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Post to Slack
+      uses: slackapi/slack-github-action@v4.0.0
+      with:
+        method: chat.postMessage
+        token: ${{ inputs.token }}
+        payload: |
+          channel: "${{ inputs.channel }}"
+          text: "${{ inputs.title }}"
+          attachments:
+            - color: "${{ inputs.status == 'success' && '#36a64f' || '#d92121' }}"
+              blocks:
+                - type: "section"
+                  fields:
+                    - type: "mrkdwn"
+                      text: "*Status:*\n${{ inputs.status }} (${{ inputs.success-rate }})"
+                    - type: "mrkdwn"
+                      text: "*Tested on:*\n${{ inputs.environment }}"
+                - type: "section"
+                  fields:
+                    - type: "mrkdwn"
+                      text: "${{ inputs.report-url != '' && format('<{0}|Allure Report>', inputs.report-url) || 'No report published' }}"
+                    - type: "mrkdwn"
+                      text: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Run Details>"
+                - type: "section"
+                  fields:
+                    - type: "mrkdwn"
+                      text: "*Results:*\n📊 ${{ inputs.total }} total\n✅ ${{ inputs.passed }} passed  ❌ ${{ inputs.failed }} failed  ⚠️ ${{ inputs.broken }} broken  ⏭ ${{ inputs.skipped }} skipped"

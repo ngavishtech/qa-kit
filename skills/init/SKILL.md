@@ -1,0 +1,137 @@
+---
+name: init
+description: Sets up or updates the per-repo layer qa-kit cannot ship itself - AGENTS.md (read by Claude Code and OpenCode), CLAUDE.md, .claude/settings.json (permissions + plugin registration), .mcp.json, opencode.json, .qa-kit/project/ stubs (conventions, TestRail mapping) and the qa-kit-artifacts/ gitignore entries - in the current repo, or with --path in a subfolder of it (for a repo that is not only test automation, so Developers do not get qa-kit). On re-run after a kit update it merges the kit's changes under the repo's local edits, file by file, only after the user accepts. With --user it instead registers the MCP servers (Jira/Glean, Figma, TestRail, Playwright) at user level so qa-kit works outside any repo. Use when onboarding a Playwright test repo to qa-kit, after updating qa-kit, or to use qa-kit without a repo.
+disable-model-invocation: true
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+argument-hint: '[--user] [--path <folder>] [--servers a,b] [--kit-url <git url>] [--agents claude,opencode] [--dry-run]'
+---
+
+# Init (qa-kit onboarding and update)
+
+> **Plugin note**: this ships in the `qa-kit` plugin, so skills and agents are namespaced `qa-kit:<name>`. If invoking another skill by its bare name (as this document does) fails, retry as `qa-kit:<name>`, or read `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` and follow it directly.
+
+**Purpose**: a plugin cannot carry project instructions, permission rules or repo-specific reference files. This skill creates them in the current repo from `${CLAUDE_PLUGIN_ROOT}/templates/` (listed in `templates/manifest.json`), and on later runs brings them up to date as a three-way merge: the kit's previous output (nothing is stored for it in the repo: it is rebuilt from the kit tag that wrote the file and checked against the hash recorded in `.qa-kit/manifest.json`), the kit's new output, and the file as the repo has it now. The merge itself is done by `${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs` (Node, no dependencies), not by you.
+
+**Safety rules (non-negotiable)**
+- **Never change an existing file except through the plan -> user accepts -> apply flow below**, one file at a time. Nothing is written silently, including fast-forwards.
+- **Never write secrets.** Credentials and endpoints (`TESTRAIL_*`, `FIGMA_API_KEY`, `GLEAN_URL`) stay in each person's shell environment; only list their names.
+- **Never write model, provider or API-key settings.** Each person's agent is already configured with its own models.
+- `--dry-run`: stop after the plan; write nothing.
+- Do not commit. Leave the changes in the working tree for the user to review with `git diff`.
+
+## User mode (`--user`): use qa-kit without a repo
+
+For work that needs no repo, such as planning tests from a Jira ticket or Figma design. Skip the repo steps below and do only this (a `--path` given together with `--user` is ignored: say so, nothing is installed in any folder):
+
+1. Detect which agent you are running in (Claude Code or OpenCode) and use that as `<agent>` (`claude` or `opencode`). Ask nothing if it is clear.
+2. Preview: `node "${CLAUDE_PLUGIN_ROOT}/tools/mcp-user.mjs" --agent <agent> --dry-run` (add `--servers a,b` if the user named some; keep the quotes, a Windows path may contain spaces). Show what would be added and what is already configured.
+3. After the user agrees, run it again without `--dry-run`. It never changes a server that already exists, and never stores a credential: it prints the variable *names* to export (`FIGMA_API_KEY`, `GLEAN_URL`, `TESTRAIL_*`) and the servers that sign in through OAuth on first use. If any server could not be added, show the exact command it printed.
+4. Report the environment variables still to set (names only, check `set` / `MISSING` as in step 2 of the repo flow), the sign-in steps (Claude Code: `/mcp` then Authenticate `atlassian` / `glean_default`; OpenCode: on first use), that the agent must be restarted so the servers just added are loaded, and that plans land in `./qa-kit-artifacts/` of the folder the user works in. Then stop; do not create any repo files.
+
+## Steps
+
+1. **Locate where to install.** From the folder the user is in, run `node "${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs" locate` and add `--path <folder>` exactly as the user typed it. `--path` is always relative to the folder the user is in, even with a leading `/` or `\` (`--path=/myfolder/test` means `./myfolder/test`). The tool prints JSON: `gitRoot` (null outside a git repo), `projectDir`, `offset` (the project folder relative to the git root, empty at the root), `reason`, `exists`, `installed`, `warnings`, and sometimes `needsDecision`. Call `projectDir` **`<project>`**: every later `--repo` and every repo file below is `<project>`, never the git root. Always put the value in double quotes when you use it in a command (it may contain spaces). If the tool fails (path outside the repo, a file, an absolute path, inside `.git`), show its message and stop.
+   - `needsDecision: "install-elsewhere"`: qa-kit is already installed in another folder of this repo (`installs`). Write nothing. Tell the user to run `/qa-kit:init` from that folder, or to pass `--path` if a second install is really wanted. This is what prevents a duplicate install at the repo root.
+   - `needsDecision: "ask-location"`: the user is in a subfolder and nothing is installed yet. Ask once where to install: one of the folders in `options.folders` (nearest first; the nearest is the folder the user is in) or the repo root (`options.root`). Say why it matters: the files `init` writes (`AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.claude/settings.json`, `opencode.json`) change what an agent does for everyone who starts it in that folder, so a root install reaches Developers of a mixed repo too. If the user picks a folder, run `locate` again with `--path` set to that folder relative to where the user is (`.` for the current folder).
+   - `warnings`: show them. One saying that Git Bash rewrote the value (a leading `/` becomes `C:/Program Files/Git/...`) is informational: say how it was read and carry on. One about another install that contains or sits beside the chosen folder needs an answer: ask whether to continue.
+   - `exists: false`: the folder will be created; say so and ask the user to confirm before planning.
+   - `installed: true`: this is an **update**. Read `agents`, `vars` and `kitVersion` from `<project>/.qa-kit/manifest.json` and tell the user which kit version the folder was last merged with versus the installed one (`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`).
+   - Not a git repo (`gitRoot` is null): say so and carry on in the current folder.
+   - A non-empty `offset` means a **subfolder install**: remember it for steps 8 and 9.
+
+2. **Check the consumer contract in `<project>`** (not the git root: in a subfolder install the root `package.json` and lockfile belong to the application, so report a missing `<project>/package.json` as missing instead of borrowing the root's) and report each as OK / missing (do not fix, just report):
+   - `package.json` exists and defines the scripts the skills use: `lint`, `format`, `typecheck`, and at least one `test*` script.
+   - `@playwright/test` is a dependency; which package manager the lockfile implies (`yarn.lock` / `pnpm-lock.yaml` / `package-lock.json`).
+   - The default branch (per `${CLAUDE_PLUGIN_ROOT}/patterns/git-safety.md` -> "Detecting the real default/base branch"); the top-level source folder that holds both tests and support code (for example `src` when the repo has `src/tests` and `src/support`; otherwise the folder that contains the tests folder).
+   - Personal prerequisites (README "Prerequisites"): `git --version`; `gh auth status`; `node --version` (22 or newer); whether each of `FIGMA_API_KEY`, `GLEAN_URL`, `TESTRAIL_URL`, `TESTRAIL_USERNAME`, `TESTRAIL_API_KEY` is set. Report only "set" or "MISSING" - never print, log or write a value. `GLEAN_URL` is only needed for the optional Glean fallback. Atlassian and Glean sign in through OAuth on first use and cannot be checked from here.
+
+3. **Ask once, only for what you cannot detect or read from the manifest** (`vars`), and pass the answers as `--var` in every later command:
+   - Which agents this repo's team uses (`claude`, `opencode`, or both). Default to what you detected from `.claude/`, `opencode.json` and the CLIs on PATH, else both.
+   - `KIT_GIT_URL`: the kit's git URL. Skip if `--kit-url` was given or the manifest has it. Otherwise offer a default for the user to confirm, taken from the first source that has a value: the `repository` field of `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`, then `git -C "${CLAUDE_PLUGIN_ROOT}/" remote get-url origin` (the kit folder is usually not a git clone, so do not rely on it). With no default, ask. An empty value is rejected; ask again.
+   - `PROJECT_NAME` and `PRODUCT_NAME`: default both from `package.json` `name`.
+   - `TEST_SOURCE_DIR`: confirm the detected folder. It is the top-level source folder that holds both the tests and the support code (page objects, helpers), such as `src` for a repo with `src/tests` and `src/support` - not the tests folder itself.
+
+   Ask nothing else.
+
+4. **Plan** (read-only): `node "${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs" plan --repo "<project>" --agents <a,b> --var KIT_GIT_URL=<url> --var TEST_SOURCE_DIR=<dir> --var PROJECT_NAME=<name> --var PRODUCT_NAME=<name>`. Show the user a short table of `[status] file` plus each diff. Statuses:
+
+   | Status | Meaning |
+   |---|---|
+   | `create` | new file |
+   | `move` | the target `.qa-kit/project/conventions.md` or `.qa-kit/project/testrail-mapping.md` is missing but the same file exists under the legacy `.claude/project/`; the content comes from the legacy file. The tool never touches, deletes or stages the old file. |
+   | `fast-forward` | no local edits, the kit changed it |
+   | `merge` | both changed, no overlap - safe |
+   | `conflict` | both changed the same lines/keys |
+   | `unknown-base` | the repo already had this file before qa-kit tracked it |
+   | `unchanged` | nothing to do |
+   | `kept` | a file created once and then the repo's alone (the TestRail mapping) - never auto-updated; its diff, if any, is what the kit changed upstream |
+   | `remove` | `.qa-kit/base/`: copies kit 0.3.x left in the repo, no longer used (see step 6 and the report) |
+
+   For JSON conflicts the plan prints both values for each conflicting path (the repo's and the kit's). If any managed file has uncommitted edits, suggest committing or stashing first so `git diff` afterwards shows only the kit's changes. With `--dry-run`, stop here.
+
+   **Where the "kit previous" side comes from.** On an update the tool rebuilds it, per file, from the kit tag that wrote the file (a shallow clone of `KIT_GIT_URL` in a temporary folder outside the repo), in layers, each accepted only if its text hashes to the value recorded in `.qa-kit/manifest.json`: (1) that tag's templates rendered with the installed kit; (2) if layer 1 does not reproduce the file, the renderer shipped in that tag, which helps only when the renderer itself changed - **only after the user agrees**; (3) otherwise the file is treated as a first-time merge. The create-once files (the TestRail mapping) use layer 1 only and never produce a fallback line or the question: their base only feeds the "what the kit changed" diff. **`.qa-kit/project/conventions.md` is merged like `AGENTS.md`**: the team edits it (and step 7 pre-fills it), but the kit improves it too, so a kit change and a team change are combined (`merge`, `fast-forward`), a change to the same lines is a `conflict` that lands in a review copy and never in the file, and a file whose base cannot be rebuilt is a first-time `unknown-base` review copy. When resolving a conventions conflict, the team's values (their commands, paths, tags) win unless the user says otherwise; take the kit's new rows or sections around them. Step 7 pre-fill never runs again on an update. The plan JSON carries `baseFallbacks` and `tagRendererOffer`:
+   - If `tagRendererOffer` is present, ask **once** (not per file): "The previous version of `<targets>` cannot be rebuilt from tag `<tags>` with the installed kit: its renderer, templates or variables differ from when the files were written. If it is the renderer that changed, running the renderer from that tag of `<url>` can rebuild it. Run it? This executes code from that repository." Show the real URL and tag(s). Never answer for the user, and skip the question on a non-interactive run. On yes, repeat the plan with `--base-renderer tag` and pass the same flag to `apply` and `record`. On no, go on: those files use layer 3.
+   - If `baseFallbacks` is not empty (after the answer), print one block before the table: for each file `base for <target> could not be rebuilt from tag <tag> (<reason>); treated as a first-time merge: <effect>; nothing is overwritten`. Text files then show as `unknown-base`, JSON files merge key by key. Suggest committing or stashing local edits first.
+
+5. **Review gate**: if every entry is `unchanged` or `kept` (typical for a re-run after a kit update that changed nothing for this repo), say so, skip steps 5 to 8 and go to step 9 - the ownership report still runs. A `remove` entry is actionable: it is listed and accepted with the others, not asked separately. Otherwise ask the user which files to apply - all, a chosen subset, or none. This includes `move` entries. `--accept all` also covers the `remove` entry; for a subset, `--accept` must name the literal target `.qa-kit/base/` or the folder stays. Skipped files stay offered on the next run. Do not apply anything the user did not accept.
+
+6. **Apply**: `node "${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs" apply --repo "<project>" --accept all|<target>,<target>` (same `--agents`/`--var` as the plan). Files the tool cannot settle on its own (`conflict`, `unknown-base` text) are not written to their real path; it leaves a review copy under `qa-kit-artifacts/merge/<target>` and exits with code 4. The review copy depends on the file kind:
+   - **Text**: the file with git conflict markers.
+   - **JSON**: `{ "merged": <result>, "conflicts": [ { "path", "repo", "kit" } ] }`, with both values for every conflicting path.
+
+   For each of those, work with the user: read the review copy and the real file, propose a resolution hunk by hunk, write the agreed content to the real path, then run `node "${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs" record --repo "<project>" --paths <target>` so the kit knows it is merged. `record` refuses a file that still contains `<<<<<<<` markers. Common case: an existing `CLAUDE.md` with real content - offer to move that content under `## Project-specific` in `AGENTS.md` and leave `CLAUDE.md` as `@AGENTS.md`; when the content comes from a 0.1.0 repo, also rewrite its references to `.claude/project/` into `.qa-kit/project/`.
+
+   `apply` also reports `leftovers`: the legacy paths of any `move` it applied. Tell the user they can delete those old files after reviewing the new ones (`git rm` for tracked ones), and nothing else: do not delete, move or stage them yourself.
+
+   `apply` and `record` also report `tagCheck`: after writing, the tool checks that the kit tag it just recorded (`tag`) really renders what was written (`status`: `ok`, `missing` = the tag is not on `KIT_GIT_URL`, `differs` = the tag exists but renders differently, `unverified` = it could not be checked, with `reason`). It never blocks anything; step 9 reports it.
+
+   `apply` also reports `legacyBase` when the repo still has the `.qa-kit/base/` copies of kit 0.3.x: `removed`, `kept` (copies edited since the kit wrote them, left alone), `blockedBy` (files still unresolved, which still depend on their copy; the folder is removed on a later run once they are settled) and `skipped` (the `remove` entry was not accepted). The tool deletes only unmodified copies and the folders it emptied, and never runs git: do not delete or stage anything yourself.
+
+7. **Pre-fill `.qa-kit/project/conventions.md`** only if this run just created it from the template (not from a `move`): replace the shipped defaults with values you detected (test directory, package manager, default branch, path aliases from `tsconfig.json` `paths`); leave the rest as shipped. For the `## Monkey rules` table fill the `Never run against` row only with production host names you can see in non-secret config (the Playwright config, the environment config module, CI workflow files; never read `.env` values for this) and leave every other row as shipped (`(none yet)`): the team knows its protected data, you do not.
+
+8. **CI caller workflow (optional, skipped unless the actions are published)**: do this only if **all** hold; if any fails, copy nothing and add one report line (`CI workflow skipped: <which condition failed>`).
+   - `.github/workflows/` has no workflow that already uses `actions/playwright-docker-run`.
+   - The kit repository path `<org>/<repo>` can be derived from `KIT_GIT_URL` (`https://<host>/<org>/<repo>` with or without `.git`, or `git@<host>:<org>/<repo>.git`).
+   - An action version tag exists: `git ls-remote --tags --refs <KIT_GIT_URL> 'v*'`, keeping only tags that are exactly `v` plus digits (ignore plugin release tags such as `0.2.0`). Take the highest as `<tag>`.
+
+   When all hold, ask once whether to add it. If yes, copy `${CLAUDE_PLUGIN_ROOT}/templates/github/run-tests.yml` to `.github/workflows/run-tests.yml` (never overwrite) and replace `@v1` with `@<tag>` (if `<tag>` is higher than `v1`, say the template was written for `v1` and to compare the action inputs in the README), then ask for `COMPOSE_SERVICE_NAME` and `SLACK_CHANNEL_ID` (empty drops the Slack input). Mention the repo-level prerequisites from the README's "CI building blocks"; do not create secrets or variables.
+
+   **Subfolder install (non-empty `offset`).** Workflows only run from `.github/workflows/` at the **git root**, and the actions have no `working-directory` input yet, so a copy cannot be made to work by itself. It stays an offer, asked once and only if the user wants it. When they say yes, write it to `<gitRoot>/.github/workflows/run-tests.yml` (not under `<project>`), with this block inserted directly above the `on:` line, and say plainly in the report that the workflow is **not ready to run**:
+
+   ```
+   # TODO(qa-kit): the tests live in <offset>/, not at the repository root. The qa-kit actions below run
+   # from the checkout root (they have no working-directory input yet): make them run from <offset>/ and
+   # check that playwright-report/ and allure-results/ are found there before relying on this workflow.
+   ```
+
+   (with the real `offset` substituted). Never present it as done, and never offer it a second time in the same run.
+
+9. **Report** (short): files created / moved / updated / skipped / left for manual merge, the legacy files that can now be deleted (step 6), contract gaps from step 2, and the environment variables each person still needs: `TESTRAIL_URL`, `TESTRAIL_USERNAME`, `TESTRAIL_API_KEY`, `FIGMA_API_KEY`, and `GLEAN_URL` for the optional Glean fallback. Then the **ownership report**, which is produced by the tool and is part of **every** run, including a re-run after a kit update where every file turned out unchanged:
+   Run `node "${CLAUDE_PLUGIN_ROOT}/tools/merge.mjs" status --repo "<project>"` (add `--extra "<path>"` for the CI workflow of step 8, relative to `<project>` or absolute). It lists **everything qa-kit owns here**, not only what this run wrote: the config files, `.qa-kit/project/*` and `.qa-kit/manifest.json`, plus any extra file. Print its result as three short lists and nothing more (a fourth block for the obsolete base folder is described below):
+   - **To commit** (`toStage`: untracked, modified or staged): the paths, relative to `<project>`, headed "stage these by path, never with `git add -A`". `qa-kit-artifacts/` is never in it. Say which of them are `.qa-kit/` state files: they are part of the setup and must be committed too. For a subfolder install say they are staged from that folder, and that the CI workflow, if one was written, is at the git root. A run that changed nothing still prints this list: it catches files that were never committed after an earlier run.
+   - **Ignored by the repo** (`ignored`): for each file, its `rule` (pattern, file, line, and `kind`: `repo` = the repo's own `.gitignore`, `local-exclude` = `.git/info/exclude`, `global` = the user's global ignore file) and what teammates then miss: `.claude/settings.json` = no plugin offer and no shared permissions for Claude Code users; `.mcp.json` = no shared MCP servers; `AGENTS.md` / `CLAUDE.md` / `opencode.json` = no shared instructions or servers for that agent; anything under `.qa-kit/` (marked `critical`) = later updates cannot be merged cleanly for teammates, so treat it as the most serious case. Then give the user the two ways to deal with it, whether the rule is deliberate or a mistake: **(a) add the file despite the rule** with the `forceAdd` command from the tool (`git add -f -- ':/<path>'`; the file is tracked from then on and later `init` runs update it normally); **(b) change the rule** using the tool's `fix` text, shown exactly as given (a folder rule must be replaced, not just negated: git cannot re-include a file below an ignored folder). `fix` is null when the rule is outside the repo (`local-exclude`, `global`): only (a) applies. **Print these commands; do not run them and do not edit any ignore file** unless the user asks you to, because staging is the user's step. A rule that is intentional is fine: the user may keep the file local.
+   - **Missing** (`missing`): owned config files that do not exist because the user declined them at the review gate or the agents choice left them out; one line, no action needed unless they were meant to be created. If `git` is false (not a repository) say so and skip the first two lists.
+   - **Recorded tag** (only when `tagCheck` is not null and its `status` is not `ok`): `missing` -> "tag `<tag>` is not on `<KIT_GIT_URL>` yet: push it, otherwise the next update of these files is a first-time merge"; `differs` -> "the installed kit renders `<targets>` differently from tag `<tag>` (unreleased changes?): unless the tag is corrected, the next update of these files is a first-time merge"; `unverified` -> "could not check tag `<tag>` (`<reason>`); the files were written normally". Say that the manifest keeps the tag, so a tag pushed or fixed later heals it.
+   - **Obsolete base folder** (only when `legacyBase` from step 6 is not null, or `status` returns a non-empty `legacy`). Say it in plain words, in this shape:
+     - `removed` not empty: "`.qa-kit/base/` (N files) was removed. It was safe: it only held copies of what an older kit version wrote, every copy was still unmodified, and every file is now recorded in `.qa-kit/manifest.json` with a hash and the kit tag that wrote it. From now on the previous version of each file is rebuilt when needed, in layers, each checked against that hash: (1) the templates of that tag rendered with the installed kit; (2) if the renderer changed, the renderer from that tag, only if you approve; (3) if neither reproduces the file, it is treated as a first-time merge (review copy, nothing overwritten) and this report says so." Then: stage the deletions by path with `git add -u -- .qa-kit/base` (never `git add -A`), and the line `.qa-kit/base/** linguist-generated=true` in `.gitattributes`, if the repo has it, is now dead and can be deleted by hand (`init` does not edit lines it did not just write).
+     - `kept` not empty: one line per file, "left in place because it was edited after the kit wrote it; review it and delete it by hand".
+     - `blockedBy` not empty: one line per file, "still unresolved, so its copy is still needed; the folder is removed on a later `init` run once it is settled".
+     - `skipped` true: "the obsolete `.qa-kit/base/` folder stays because it was not accepted; it is offered again next run".
+
+   `init` itself never stages, commits or changes an ignore file.
+
+   - **Subfolder install only (non-empty `offset`).** State where qa-kit now lives (`<project>`) and that **people must start the agent from that folder** (`cd <offset>`, then start Claude Code or OpenCode there) to get qa-kit; started at the repo root it does not load the settings, MCP servers or instructions. Be accurate about the limit: a Claude Code session started at the root can still pick up `<offset>/CLAUDE.md` later, when it reads or edits a file inside that folder. Tell them that Developers see none of it unless they work in that folder, and that updating later means running `/qa-kit:init` from `<offset>` (no flag needed).
+
+   Then the one-time steps for a repo with new MCP config:
+   - **Restart the agent** (Claude Code and OpenCode) so the MCP servers init added or changed are loaded.
+   - **Claude Code**: approve the project MCP servers when asked (`claude mcp reset-project-choices` asks again), run `/mcp` and authenticate `atlassian` and `glean_default`.
+   - **OpenCode**: remote servers (`atlassian`, `glean_default`) authenticate through OAuth the first time they are used.
+
+   Everything qa-kit writes at run time goes to the gitignored `qa-kit-artifacts/`; see `${CLAUDE_PLUGIN_ROOT}/docs/MCP-SETUP-GUIDE.md`. End with the next command to try: `/qa-kit:plan-tests <a ticket key>`, and tell them `/qa-kit:help` shows everything qa-kit can do on one screen. Also mention that `/qa-kit:monkey-test <area>` explores the running app on a test environment, that it refuses production-looking hosts and never deletes or changes data it did not create, and that the `## Monkey rules` table in `.qa-kit/project/conventions.md` is where the team lists hosts to never run against, protected data and known noise (fill it in before the first run).
+
+## Notes
+
+- Safe to re-run at any time, and after every kit update: with no local edits it fast-forwards, with local edits it merges, and it never discards the repo's changes.
+- A fetch waits at most 20 seconds (`QA_KIT_FETCH_TIMEOUT`, in seconds, changes it) and a failed one is not retried for five minutes, so an offline run does not stall at every step. Updating needs read access to `KIT_GIT_URL` with the git credentials the user already has (a shallow clone of one tag, into a temporary folder outside the repo). Offline, in CI or when the tag does not exist, the affected files are treated as a first-time merge and the report says so; nothing is overwritten.
+- Teammates who open the repo after this is committed still have to install the kit once per machine: for Claude Code `claude plugin marketplace add <KIT_GIT_URL>` and `claude plugin install qa-kit@ngavish-qa --scope user` (the committed `.claude/settings.json` registers the marketplace and enables the plugin, but does not install it for them), for OpenCode the clone and `install` in the "Setting up qa-kit on a new machine" section of `AGENTS.md`. With a subfolder install this applies only to people who start the agent in that folder.
+- `--path` is for a repo that is not only test automation. Without it, `init` installs at the git root (an automation-only repo needs nothing else); with it, every file and `.qa-kit/` go into that folder and the repo root is left exactly as the Developers have it.

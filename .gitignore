@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+qa-kit-artifacts/
+.claude/settings.local.json
+.vscode/
+.idea/
+dist/

@@ -1,0 +1,101 @@
+name: "E2E Run"
+run-name: E2E ${{ github.repository }} on ${{ github.event.inputs.environment || 'SCHEDULED' }}
+
+# Reference workflow built from the shared qa-kit actions. The heavy lifting (Docker/ECR run, Allure
+# report, Slack message) lives in the actions; this file only decides WHEN to run, WHICH tests, and
+# on WHAT runner. Replace COMPOSE_SERVICE_NAME with the docker compose service that runs your tests and
+# SLACK_CHANNEL_ID with the channel id (empty drops Slack).
+# Copy to .github/workflows/run-tests.yml in your repo (qa-kit's init does it only once a v1-or-higher action tag exists).
+
+on:
+  schedule:
+    # Daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment to run tests against
+        options:
+          - test01
+          - test02
+        required: true
+      test_type:
+        description: 'Comma-separated Test Type values (blank = no filter). Valid: ui, api, performance, a11y'
+        required: false
+      test_level:
+        description: 'Comma-separated Test Level values (blank = no filter). Valid: smoke, sanity, regression'
+        required: false
+      test_priority:
+        description: 'Comma-separated Test Priority values (blank = no filter). Valid: critical, high, medium, low'
+        required: false
+      test_feature:
+        description: 'Comma-separated Test Feature values (blank = no filter). Valid values are defined by your repo'
+        required: false
+      test_extra:
+        description: 'Advanced: a spec path ANDed with the filters, or a raw --grep expression when the four filters are blank'
+        required: false
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.event.inputs.environment || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # publish the Allure report to the gh-pages branch
+  pages: write
+  id-token: write
+
+jobs:
+  e2e:
+    name: Build and run tests
+    timeout-minutes: 15
+    runs-on: ${{ vars.DEFAULT_LINUX_RUNNER_LABEL }}
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Run the tests in Docker
+        id: tests
+        uses: ngavishtech/qa-kit/actions/playwright-docker-run@v1
+        with:
+          compose-service: COMPOSE_SERVICE_NAME
+          environment-name: ${{ github.event.inputs.environment }}
+          environment-url: ${{ vars.TARGET_ENVIRONMENT_URL }}
+          # Dispatch: the filters typed in the form. Schedule: the NIGHTLY_* repository variables
+          # (unset = full suite).
+          test-type: ${{ github.event_name == 'schedule' && vars.NIGHTLY_TEST_TYPE || github.event.inputs.test_type }}
+          test-level: ${{ github.event_name == 'schedule' && vars.NIGHTLY_TEST_LEVEL || github.event.inputs.test_level }}
+          test-priority: ${{ github.event_name == 'schedule' && vars.NIGHTLY_TEST_PRIORITY || github.event.inputs.test_priority }}
+          test-feature: ${{ github.event_name == 'schedule' && vars.NIGHTLY_TEST_FEATURE || github.event.inputs.test_feature }}
+          test-extra: ${{ github.event_name == 'schedule' && vars.NIGHTLY_TEST_EXTRA || github.event.inputs.test_extra }}
+          # Composite actions cannot read secrets themselves - pass them in.
+          artifactory-secret: ${{ secrets.ARTIFACTORY_SECRET }}
+          artifactory-user: ${{ secrets.ARTIFACTORY_USER }}
+          artifactory-npm-token: ${{ secrets.ARTIFACTORY_NPM_TOKEN }}
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-role-to-assume: ${{ secrets.ECR_PULL_AWS_ROLE_TO_ASSUME }}
+          aws-role-external-id: ${{ secrets.ECR_PULL_AWS_ROLE_EXTERNAL_ID }}
+          aws-region: ${{ secrets.ECR_PULL_AWS_REGION }}
+
+      - name: Allure report and artifacts
+        id: report
+        if: always()
+        uses: ngavishtech/qa-kit/actions/allure-report@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post to Slack
+        if: always()
+        uses: ngavishtech/qa-kit/actions/slack-notify@v1
+        with:
+          token: ${{ secrets.ALERT_BOT_TOKEN }}
+          channel: SLACK_CHANNEL_ID
+          title: "E2E test run"
+          status: ${{ steps.tests.outputs.test-outcome }}
+          environment: ${{ github.event.inputs.environment }}
+          total: ${{ steps.report.outputs.total }}
+          passed: ${{ steps.report.outputs.passed }}
+          failed: ${{ steps.report.outputs.failed }}
+          broken: ${{ steps.report.outputs.broken }}
+          skipped: ${{ steps.report.outputs.skipped }}
+          success-rate: ${{ steps.report.outputs.success-rate }}
+          report-url: ${{ steps.report.outputs.report-url }}

@@ -1,0 +1,31 @@
+schema_version: "1.1"
+name: verify-plan-mode
+description: Plan mode marks each scenario duplicate, partial or new, with evidence, and edits nothing.
+context:
+  scaffold_script: scaffold.sh
+graders:
+  - name: duplicate
+    type: regex
+    pattern: 'TC-003[^\n]*duplicate'
+    flags: i
+  - name: partial
+    type: regex
+    pattern: 'TC-004[^\n]*partial'
+    flags: i
+  - name: new
+    type: regex
+    pattern: 'TC-005[^\n]*new'
+    flags: i
+  - name: evidence
+    type: regex
+    pattern: 'export\.spec\.ts:\d+'
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?verify-coverage"'
+    arm: with-only
+  - name: judgement
+    type: llm
+    criteria: |
+      PASS if the answer gives one verdict per scenario (TC-003, TC-004, TC-005), supports each duplicate or partial verdict with the existing test it found (file and test title), says TC-004 builds on the existing 10-row test, and does not claim to have changed any file or the plan.
+      FAIL if a scenario has no verdict, a duplicate or partial verdict names no existing test, TC-005 is called covered, or the answer says it edited a file or rewrote the plan.
