@@ -13,7 +13,7 @@ Reusable GitHub **composite actions** so every test repo runs, reports and notif
 
 Use all three through the template for a complete run, or any one on its own (for example only `slack-notify` from a different pipeline).
 
-This repo has two workflows of its own in `.github/workflows/`: `secret_scan.yml` (the org secret scan) and `ci.yml` (runs `node --test`). Neither runs the actions here. A reusable *workflow* would have to live in `.github/workflows/`, so none is shipped; the template is the reference for chaining the actions.
+This repo has workflow of its own in `.github/workflows/`: `ci.yml` (runs `node --test`). Doesn't run the actions here. A reusable *workflow* would have to live in `.github/workflows/`, so none is shipped; the template is the reference for chaining the actions.
 
 ## One-time setup (admin)
 
