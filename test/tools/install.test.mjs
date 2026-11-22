@@ -21,7 +21,7 @@ describe('OpenCode bundle', () => {
     }
     const names = [...bundle().keys()]
     assert.ok(names.includes('skills/qa-kit-plan-tests/SKILL.md'))
-    assert.ok(names.includes('agents/qa-kit-test-writer.md'))
+    assert.ok(names.includes('agents/qa-kit-agent-writer.md'))
     assert.ok(names.includes('commands/qa-kit-plan-tests.md'))
     assert.ok(names.includes('commands/qa-kit-feature-implement.md'))
   })
@@ -63,7 +63,7 @@ describe('OpenCode bundle', () => {
 
   it('maps agent file references to the installed agents folder', () => {
     const planTests = bundle().get('skills/qa-kit-plan-tests/SKILL.md')
-    assert.ok(planTests.includes(`${configDir.replaceAll('\\', '/')}/agents/qa-kit-test-planner.md`))
+    assert.ok(planTests.includes(`${configDir.replaceAll('\\', '/')}/agents/qa-kit-agent-planner.md`))
   })
 
   it('renders MCP tool names in OpenCode style', () => {
@@ -116,10 +116,10 @@ describe('OpenCode bundle', () => {
 
   it('uninstall removes what it wrote, keeps edited files, and prunes empty folders', () => {
     install({ configDir })
-    const edited = join(configDir, 'agents/qa-kit-test-writer.md')
+    const edited = join(configDir, 'agents/qa-kit-agent-writer.md')
     writeFileSync(edited, 'mine\n')
     const r = uninstall({ configDir })
-    assert.deepEqual(r.skipped, ['agents/qa-kit-test-writer.md'])
+    assert.deepEqual(r.skipped, ['agents/qa-kit-agent-writer.md'])
     assert.ok(existsSync(edited))
     assert.ok(!existsSync(join(configDir, 'skills')))
     assert.ok(!existsSync(join(configDir, 'qa-kit', 'patterns')))

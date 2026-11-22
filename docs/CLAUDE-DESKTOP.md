@@ -62,7 +62,7 @@ Organization settings, **Plugins & skills**, **Add**, **Upload a plugin** (or sy
 |---|---|---|---|
 | Skills (`help`, `plan-tests`, `read-ticket`, `write-tests`, `review-tests`, `create-pr`, ...) | loads | loads | loads |
 | Commands (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`) | loads as skills | loads | loads |
-| Agents (`test-planner`, `test-writer`, `test-executor`, `test-reviewer`, `test-deliverer`, `test-triager`, `test-monkey`) | ignored | loads | loads |
+| Agents (`agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`) | ignored | loads | loads |
 | Workflows (the parallel pipeline in `workflows/*.js`) | **unconfirmed, assume no** | **unconfirmed, assume no** | **unconfirmed**, the terminal and IDE are the tested route |
 | Paths from skills to the plugin's `patterns/` folder | **unconfirmed** | **unconfirmed** | works |
 

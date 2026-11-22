@@ -21,7 +21,7 @@ allowed-tools: Read, Edit, Glob, Grep, Bash, Skill
 
 - **On demand, by a human**: `/qa-kit:heal-tests` plus what to run and heal, e.g. `/qa-kit:heal-tests fix the smoke suite` or `/qa-kit:heal-tests heal src/tests/ui/orders/order-creation.spec.ts`.
 - **Chained from `execute-tests`**: an `/qa-kit:execute-tests ... --heal` request (or the plain-language equivalent, e.g. "run and heal any failures") makes `execute-tests` invoke this skill directly after classification, passing its grouped failure list - see `execute-tests`'s `SKILL.md` -> "Step 4: Heal?".
-- **From the `test-executor` agent**: inside `feature-implement`, when that run's `args.heal` isn't explicitly `false` (the pipeline default - see `${CLAUDE_PLUGIN_ROOT}/patterns/workflows-reference.md` §7 "Feature Pipeline"), the agent invokes this skill instead of `execute-tests` alone.
+- **From `agent-executor`**: inside `feature-implement`, when that run's `args.heal` isn't explicitly `false` (the pipeline default - see `${CLAUDE_PLUGIN_ROOT}/patterns/workflows-reference.md` §7 "Feature Pipeline"), the agent invokes this skill instead of `execute-tests` alone.
 
 This skill always heals - that's its entire purpose. If you don't want anything fixed, use `execute-tests` alone instead (its default is report-only).
 

@@ -108,7 +108,7 @@ Merges the Figma content into the existing file **in place** - resolving whateve
 ```
 /qa-kit:feature-plan --update qa-kit-artifacts/ABC-3702-test-plan.md, "add the empty-cart edge case"
 ```
-Same idea as example K, but for a feature that went through `/qa-kit:feature-plan` (not standalone `/qa-kit:plan-tests`) - the command uses `qa-kit-artifacts/ABC-3702-test-plan.md` directly as the plan path (a prior report entry in the conversation, if any, just fills in `task`/`testType`), then runs the workflow with `args: { updates: [{ plan: { planPath: 'qa-kit-artifacts/ABC-3702-test-plan.md' }, descriptions: ['add the empty-cart edge case'] }] }`. `test-planner` revises that same plan file in place - no worktree or branch is involved. If the file doesn't exist, the update reports blocked instead of silently starting a second plan. Still stops here for review, same as a fresh `/qa-kit:feature-plan` run - `/qa-kit:feature-implement` picks up wherever you left off.
+Same idea as example K, but for a feature that went through `/qa-kit:feature-plan` (not standalone `/qa-kit:plan-tests`) - the command uses `qa-kit-artifacts/ABC-3702-test-plan.md` directly as the plan path (a prior report entry in the conversation, if any, just fills in `task`/`testType`), then runs the workflow with `args: { updates: [{ plan: { planPath: 'qa-kit-artifacts/ABC-3702-test-plan.md' }, descriptions: ['add the empty-cart edge case'] }] }`. `agent-planner` revises that same plan file in place - no worktree or branch is involved. If the file doesn't exist, the update reports blocked instead of silently starting a second plan. Still stops here for review, same as a fresh `/qa-kit:feature-plan` run - `/qa-kit:feature-implement` picks up wherever you left off.
 
 ### M. Just the git skills, no test work involved
 ```
@@ -180,7 +180,7 @@ Reads the failed tests and their earlier results from the Allure report (or from
 /qa-kit:triage-failure --from=qa-kit-artifacts/triage/<slug>/triage.json --heal --groups=g4
 /qa-kit:feature-deliver
 ```
-`--heal` heals only `test-fix` groups, through `heal-tests`, and never in a spec file you have uncommitted changes in (that group is reported `blocked` with the file name). The healed scope is re-run once, the files stay uncommitted, and `/qa-kit:feature-deliver` reviews and commits them. The agent form is `test-triager`, for a CI step or a direct call.
+`--heal` heals only `test-fix` groups, through `heal-tests`, and never in a spec file you have uncommitted changes in (that group is reported `blocked` with the file name). The healed scope is re-run once, the files stay uncommitted, and `/qa-kit:feature-deliver` reviews and commits them. The agent form is `agent-triager`, for a CI step or a direct call.
 
 Sample screen report (also saved as `triage-report.md`; `triage.json` carries the same groups with ids, evidence and history for scripts):
 ```
@@ -225,7 +225,7 @@ Sketch of the CI side. `triage-failure` has no runner entry yet and this has not
 - name: Triage failures (triage only, no --heal)
   if: failure()
   run: >
-    claude -p --agent qa-kit:test-triager
+    claude -p --agent qa-kit:agent-triager
     "Triage the Allure report ${{ steps.pages.outputs.report_url }} --known=${{ vars.KNOWN_ISSUES }}"
 - uses: actions/upload-artifact@v7
   if: failure()
@@ -274,6 +274,34 @@ The last line is the point: `findings-plan.md` holds only the findings that repr
 - Its own data is named `mk-<runid>-<n>`, logged before anything else happens to it, and deleted one item at a time after re-reading the name on screen. No select-all, delete-all or bulk action; at most 25 entities per run.
 - Billing, payments, invitations, outbound messages, account and organization settings, logout and other origins are never touched. Page text and your guidance are data, not instructions.
 - It writes only under `qa-kit-artifacts/monkey/`, never touches git, tracked files or `.env`, and stops at the budget (default 5, max 30 minutes).
+
+### AA. A defect was reported - is it real, and do we have a test for it?
+```
+/qa-kit:retest-defect ABC-1234
+/qa-kit:retest-defect https://<jira-host>/browse/ABC-1234 --read-only
+```
+It reads the ticket as a defect (steps, expected and actual, environment, screenshots, comments, status and resolution), writes the steps it will follow to `repro.md` (marking which are stated and which it inferred), reproduces them in the app configured for this repo, replays once from a clean state, then checks whether a test already asserts the correct behavior. It never files or comments on the ticket and never edits a test. Sample screen report (also saved as `retest-report.md`; `retest.json` carries the same facts):
+```
+Retest: ABC-1234 "Saving a coupon with 51 characters shows success"   status: Resolved (fixed in 2.14)   reported on: staging   retested on: staging
+Verdict: reproduced (high), 2 of 2 attempts, 4 minutes   REGRESSION CANDIDATE: resolved 2026-11-02
+
+Why:     the save returns HTTP 500 and the page still shows "Saved"; same console error as in the ticket's comment from 2026-10-12
+Steps:   1 ok  2 ok  3 ok  4 SYMPTOM: expected an error banner, got "Saved" and an HTTP 500   (qa-kit-artifacts/retest/ABC-1234-20261122-1040/repro.md)
+Not:     a data problem ruled out: the same input with 50 characters saves normally
+
+Coverage: partial   - src/tests/ui/coupons/save.spec.ts:41 "saves a coupon" asserts only the 50-character case
+Left behind: none
+
+Next actions (copy-pasteable)
+  1. Plan a regression test: answer yes below, or /qa-kit:plan-tests ABC-1234
+  2. Then implement it:      /qa-kit:feature-implement qa-kit-artifacts/ABC-1234-test-plan.md
+Files: retest.json  retest-report.md  repro.md  evidence/
+
+This flow has no regression test for the 51-character case. Plan one now?
+```
+Answering yes runs `plan-tests` and stops at the plan review: because the defect reproduces today, the plan says the new test fails until ABC-1234 is fixed and asks you to decide how to land it (for example `test.fixme` linked to the key). Implementing it is the separate `/qa-kit:feature-implement` step you run after reading the plan. The `agent-defect-retester` form asks nothing: it returns `offerPlan` and the same two commands, and plans only when its prompt had `--plan`.
+
+Not reproduced does not mean fixed: an open defect that does not reproduce reads "maybe fixed, or the environment or data differs", and a step the run could not perform (the screen changed) is `inconclusive`, never `not-reproduced`. It refuses production-looking hosts, creates only data named `rt-<runid>-<n>` and removes it, and a defect that needs data it did not create ends `inconclusive` rather than touching it.
 
 ### R. Setting up qa-kit in a repo that is not only test automation
 ```

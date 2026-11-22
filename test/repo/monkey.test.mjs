@@ -10,14 +10,14 @@ const list = (value) => value.split(',').map((x) => x.trim())
 const playwright = (tools) => tools.filter((x) => x.startsWith('mcp__playwright__'))
 
 const skill = read('skills/monkey-test/SKILL.md')
-const agent = read('agents/test-monkey.md')
+const agent = read('agents/agent-monkey.md')
 const skillTools = list(splitFrontmatter(skill).fields.get('allowed-tools'))
 const agentFields = splitFrontmatter(agent).fields
 const agentTools = list(agentFields.get('tools'))
 
 describe('the monkey tester keeps its tool grants narrow', () => {
   it('the agent has no Edit tool, no unsafe code tool and no Jira, Figma or TestRail access', () => {
-    assert.equal(agentFields.get('name'), 'test-monkey')
+    assert.equal(agentFields.get('name'), 'agent-monkey')
     assert.ok(!agentTools.includes('Edit'))
     for (const tools of [agentTools, skillTools]) {
       assert.ok(!tools.includes('mcp__playwright__browser_run_code_unsafe'))
@@ -27,7 +27,7 @@ describe('the monkey tester keeps its tool grants narrow', () => {
   })
 
   it('the skill and the agent grant the same explicit Playwright list as the executor, never a wildcard', () => {
-    const executor = playwright(list(splitFrontmatter(read('agents/test-executor.md')).fields.get('tools')))
+    const executor = playwright(list(splitFrontmatter(read('agents/agent-executor.md')).fields.get('tools')))
     assert.deepEqual(playwright(skillTools), executor)
     assert.deepEqual(playwright(agentTools), executor)
     assert.ok(![...skillTools, ...agentTools].some((x) => x.includes('*')))
@@ -70,7 +70,7 @@ describe('the monkey tester states its limits and its method', () => {
     const workflow = read('workflows/feature-monkey.js')
     assert.match(workflow, /A unit is never retried/)
     assert.match(workflow, /Date\.now\(\)/)
-    assert.match(workflow, /test-monkey/)
+    assert.match(workflow, /agent-monkey/)
   })
 
   it('the conventions template has a Monkey rules section the skill reads', () => {
@@ -128,7 +128,7 @@ describe('the monkey tester never touches data it did not create', () => {
     assert.match(read('skills/help/SKILL.md'), /feature-monkey/)
     assert.match(read('skills/help/SKILL.md'), /never delete or change data they did not create/)
     assert.match(read('README.md'), /### Monkey testing/)
-    assert.match(read('docs/CLAUDE-DESKTOP.md'), /test-monkey/)
+    assert.match(read('docs/CLAUDE-DESKTOP.md'), /agent-monkey/)
     assert.match(read('templates/AGENTS.md.template'), /monkey-test/)
   })
 })

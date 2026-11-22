@@ -20,7 +20,7 @@ allowed-tools: Read, Glob, Grep, Bash
 ## How this skill is invoked
 
 - **From `plan-tests`**: Step 3 (Map to Existing Coverage) invokes it in **plan mode** with the scenarios from Step 2 and any TestRail cases already fetched. Planning stays read-only, so this skill only returns verdicts and `plan-tests` writes them into the plan.
-- **From the `test-reviewer` agent's Review step**: when its prompt names the approved plan, the agent invokes it in **implementation mode** right after `review-tests` and treats the result as extra review findings.
+- **From `agent-reviewer`'s Review step**: when its prompt names the approved plan, the agent invokes it in **implementation mode** right after `review-tests` and treats the result as extra review findings.
 - **On demand, by a human**: `/qa-kit:verify-coverage plan qa-kit-artifacts/ABC-1234-test-plan.md` ("which of these scenarios already exist?") or `/qa-kit:verify-coverage implementation qa-kit-artifacts/ABC-1234-test-plan.md level=smoke` ("do the specs on this branch cover the plan?").
 
 It asks no questions. If an input is missing (no plan file, no specs found) it says so and stops.

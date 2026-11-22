@@ -11,7 +11,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, mcp__atlassian__get*,
 
 **Purpose**: Turn "the nightly run failed" into advice per failure group: what it most likely is, why, since when it has been failing, whether it is already filed, and what to do next - confirmed by re-running only what failed. The verdicts are advice from evidence, never facts.
 
-**Scope**: small on purpose. It works on the failed tests of one report, after a run (CI, nightly, dispatch). Running and healing a whole set of specs while writing tests is `test-executor`'s job, not this skill's.
+**Scope**: small on purpose. It works on the failed tests of one report, after a run (CI, nightly, dispatch). Running and healing a whole set of specs while writing tests is `agent-executor`'s job, not this skill's.
 
 **Project overrides**: if the repo has `.qa-kit/project/conventions.md`, read it first: its *Commands* table replaces the `npx playwright test` examples below, and a ticket-link convention (an annotation or tag that ties a test to a Jira key), if it names one, is used in Step 4.
 
@@ -37,7 +37,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, mcp__atlassian__get*,
 | `--from=<triage.json>` | Load an earlier result instead of fetching, retesting and classifying again (see "Continuing from a result") |
 | `--groups=g1,g2` | With `--from`: act only on these groups |
 
-- **From the `test-triager` agent**: the same procedure, run non-interactively (`${CLAUDE_PLUGIN_ROOT}/agents/test-triager.md`).
+- **From `agent-triager`**: the same procedure, run non-interactively (`${CLAUDE_PLUGIN_ROOT}/agents/agent-triager.md`).
 - **Later from CI**: not wired up today. Inputs are arguments only and the outputs are files, so a CI step or a runner entry can call it. CI should run it triage-only.
 
 ---

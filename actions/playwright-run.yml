@@ -1,8 +1,8 @@
-name: "VUTEF Run"
-run-name: "VUTEF <REPLACE: repo name> on ${{ github.event.inputs.environment || 'SCHEDULED/PUSH-RUN' }}"
+name: "Playwright Run"
+run-name: "Playwright <REPLACE: repo name> on ${{ github.event.inputs.environment || 'SCHEDULED/PUSH-RUN' }}"
 
-# Copy-paste version of a full VUTEF Playwright run: Docker build and run, Allure report on GitHub
-# Pages, Slack message. Copy to .github/workflows/vutef-run.yml in your repo and replace every
+# Copy-paste version of a full Playwright run: Docker build and run, Allure report on GitHub
+# Pages, Slack message. Copy to .github/workflows/playwright-run.yml in your repo and replace every
 # <REPLACE ...> and <ADD ...> marker (search for "<"). The three places to edit:
 #
 #   1. run-name (line 2)            your repo name
@@ -443,7 +443,7 @@ jobs:
         with:
           payload: |
             channel: "<REPLACE: Slack channel id, e.g. C0123456789>"
-            text: "VUTEF Playwright <REPLACE: repo name> Test Run"
+            text: "Playwright <REPLACE: repo name> Test Run"
             attachments:
               - color: "${{ steps.run_tests.outcome == 'success' && '#36a64f' || '#d92121' }}"
                 blocks:

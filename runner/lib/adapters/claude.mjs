@@ -62,7 +62,7 @@ export function createAdapter({ model, cwd, policy, timeoutMs = DEFAULT_TIMEOUT_
   return {
     agentPrefix,
     preflight() {
-      assertLaunchable('claude', buildArgs({ agentType: `${agentPrefix}test-planner`, schema: {}, model, rules }), resolve)
+      assertLaunchable('claude', buildArgs({ agentType: `${agentPrefix}agent-planner`, schema: {}, model, rules }), resolve)
     },
     async run({ prompt, agentType, schema, label, timeoutMs: callTimeoutMs }) {
       const args = buildArgs({ agentType, schema, model, rules })
