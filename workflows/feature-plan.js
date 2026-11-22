@@ -2,8 +2,8 @@ export const meta = {
   name: 'feature-plan',
   description: "Plan-only phase for several features in parallel - writes one reviewable plan per feature under the current checkout's qa-kit-artifacts/ (no worktree, no branch, no code touched), or merges new sources into an already-planned feature via --update. Stop and review before running feature-implement.",
   phases: [
-    { title: 'Plan', detail: 'test-planner agent per feature - writes qa-kit-artifacts/<slug>-test-plan.md in the current checkout' },
-    { title: 'Update', detail: 'test-planner agent per update - merges new sources into the existing plan file in place' },
+    { title: 'Plan', detail: 'agent-planner per feature - writes qa-kit-artifacts/<slug>-test-plan.md in the current checkout' },
+    { title: 'Update', detail: 'agent-planner per update - merges new sources into the existing plan file in place' },
   ],
 }
 
@@ -47,7 +47,7 @@ const AGENT_PREFIX = args?.agentPrefix ?? 'qa-kit:'
 
 // planPath/testType only exist on a successful plan. Deliberately NOT required, so a genuine block
 // (e.g. neither atlassian nor glean_default can resolve a Jira ticket, and no one's there to paste
-// text) can be reported via blocked/blockReason without test-planner being forced to fabricate a
+// text) can be reported via blocked/blockReason without agent-planner being forced to fabricate a
 // plan just to satisfy this schema - see mcp-usage.md's blocking-vs-optional rule. The plan is only
 // a file under the current checkout's qa-kit-artifacts/ - no worktree or branch exists at this stage;
 // feature-implement creates those later, and only when it runs several features at once.
@@ -114,7 +114,7 @@ async function planStage(f) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const r = await agent(planPrompt(f), {
-        agentType: AGENT_PREFIX + 'test-planner',
+        agentType: AGENT_PREFIX + 'agent-planner',
         phase: 'Plan',
         label: `plan:${describeFeature(f)}`,
         schema: PLAN_SCHEMA,
@@ -154,7 +154,7 @@ async function updateStage(u) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const r = await agent(updatePrompt(u), {
-        agentType: AGENT_PREFIX + 'test-planner',
+        agentType: AGENT_PREFIX + 'agent-planner',
         phase: 'Update',
         label: `update:${label}`,
         schema: PLAN_SCHEMA,

@@ -43,6 +43,7 @@ See `.qa-kit/project/conventions.md` (layout, path aliases, feature enum, script
 | Review a PR | `/qa-kit:review-tests review PR #123` | `/qa-kit-review-tests review PR #123` |
 | Is it already covered / do the tests match the plan (read-only) | `/qa-kit:verify-coverage plan <plan file>` | `/qa-kit-verify-coverage plan <plan file>` |
 | Triage a failed Allure report: retest only what failed, advise per group, draft Jira tickets (never files them); `--known=<keys or JQL>` cross-checks known issues, `--heal` tunes the tests | `/qa-kit:triage-failure <report URL or folder> [--known=ABC-1,ABC-2] [--heal]` | `/qa-kit-triage-failure <report URL or folder> [--known=ABC-1,ABC-2] [--heal]` |
+| Reproduce one Jira defect live: does it reproduce, is the flow already covered by tests, offers to plan a regression test (never files or edits Jira; never on production) | `/qa-kit:retest-defect <ABC-1234 or URL> [--plan \| --no-plan] [--read-only]` | `/qa-kit-retest-defect <ABC-1234 or URL> [--plan \| --no-plan] [--read-only]` |
 | Explore an area of the running app like a monkey: understands each page first, time-boxed (default 5 min, max 30), removes the data it created, writes a report and a findings plan; never on production (`--read-only` creates nothing) | `/qa-kit:monkey-test <area> [--minutes=N] [--guidance="..."] [--read-only]`; several areas: `/qa-kit:feature-monkey <area> <area>` | `/qa-kit-monkey-test <area> [--minutes=N] [--guidance="..."] [--read-only]`; several areas: `/qa-kit-feature-monkey <area> <area>` |
 | Open a PR | `/qa-kit:create-pr` | `/qa-kit-create-pr` |
 
@@ -52,7 +53,7 @@ Full reference: the kit's `patterns/workflows-reference.md` and `patterns/usage-
 
 Start Claude Code or OpenCode in the folder that contains this `AGENTS.md`: the settings, MCP servers and instructions load from the folder you start in (this matters when qa-kit lives in a subfolder of a larger repo).
 
-- **Claude Code**: this repo registers the marketplace and enables the plugin in `.claude/settings.json`, but each person installs it once per machine: `claude plugin marketplace add <KIT_GIT_URL>`, then `claude plugin install qa-kit@ngavish-qa --scope user` (or `/plugin marketplace add` and `/plugin install` inside Claude Code), then restart or `/reload-plugins`. Update later with `claude plugin marketplace update ngavish-qa`, `claude plugin update qa-kit@ngavish-qa` and `/reload-plugins`.
+- **Claude Code**: this repo registers the marketplace and enables the plugin in `.claude/settings.json`, but each person installs it once per machine: `claude plugin marketplace add <KIT_GIT_URL>`, then `claude plugin install qa-kit@ngavish-tech --scope user` (or `/plugin marketplace add` and `/plugin install` inside Claude Code), then restart or `/reload-plugins`. Update later with `claude plugin marketplace update ngavish-tech`, `claude plugin update qa-kit@ngavish-tech` and `/reload-plugins`.
 - **OpenCode**: if the `/qa-kit-*` commands are missing, install the kit once per machine (nothing installs automatically). Clone it outside any project repo, then install (separate lines; update later with `git -C "$HOME/.qa-kit-src" pull` and the same `install`):
   ```
   git clone <KIT_GIT_URL> "$HOME/.qa-kit-src"

@@ -70,7 +70,7 @@ export function createAdapter({ model, cwd, timeoutMs = DEFAULT_TIMEOUT_MS, log 
   return {
     agentPrefix,
     preflight() {
-      assertLaunchable('opencode', buildArgs(`${agentPrefix}test-planner`, model), resolve)
+      assertLaunchable('opencode', buildArgs(`${agentPrefix}agent-planner`, model), resolve)
     },
     async run({ prompt, agentType, schema, label, timeoutMs: callTimeoutMs }) {
       let message = prompt + schemaInstructions(schema)

@@ -12,7 +12,7 @@ allowed-tools: Bash, Read, Grep, Skill
 
 **Purpose**: Turn a drafted message into a real commit and push, safely - composes `write-commit-message` rather than re-deriving the message itself, and `${CLAUDE_PLUGIN_ROOT}/patterns/git-safety.md` rather than re-deriving the safety/staging/push rules.
 
-**Only invoked explicitly** (`disable-model-invocation: true`) - by a human typing `/qa-kit:commit-and-push`, by `create-pr` as an early step, or by the `test-deliverer` agent's Deliver step inside the `feature-implement` workflow (only when that run was told to commit) or the `feature-deliver` workflow.
+**Only invoked explicitly** (`disable-model-invocation: true`) - by a human typing `/qa-kit:commit-and-push`, by `create-pr` as an early step, or by `agent-deliverer`'s Deliver step inside the `feature-implement` workflow (only when that run was told to commit) or the `feature-deliver` workflow.
 
 ## Workflow
 
@@ -41,7 +41,7 @@ Write the message (drafted or provided) to `qa-kit-artifacts/commit-message.txt`
 ### Step 6: Decide whether to push
 
 - **Interactive use** (a human typed `/qa-kit:commit-and-push` or asked for this directly): show the commit that was just made (hash + message) and the branch, and ask "push to origin/`<branch>`? (y/n)" - only push on an explicit yes.
-- **Pre-authorized use** (invoked by the `test-reviewer` agent inside `feature-implement`): skip the interactive confirmation *only* if your instructions say push was already authorized for this run - that happens when the human who launched the pipeline explicitly asked for the branches to be pushed (or asked for a PR, which implies push), decided once up front, not per-feature. If your instructions don't say that, commit only and do not push, even though this is an isolated branch - say so clearly in your report (the human can push manually from the worktree, or re-run with push explicitly requested). This is the real confirmation gate for pipeline use: an unattended run cannot be interactively asked mid-run, so the default without explicit authorization is "commit, don't push."
+- **Pre-authorized use** (invoked by `agent-reviewer` inside `feature-implement`): skip the interactive confirmation *only* if your instructions say push was already authorized for this run - that happens when the human who launched the pipeline explicitly asked for the branches to be pushed (or asked for a PR, which implies push), decided once up front, not per-feature. If your instructions don't say that, commit only and do not push, even though this is an isolated branch - say so clearly in your report (the human can push manually from the worktree, or re-run with push explicitly requested). This is the real confirmation gate for pipeline use: an unattended run cannot be interactively asked mid-run, so the default without explicit authorization is "commit, don't push."
 
 ### Step 7: Push (per Step 6) and report
 

@@ -39,14 +39,14 @@ allowed-tools: Read, Write, Glob, Grep, Bash, mcp__playwright__browser_navigate,
 | `--seed=N` | Seeds the tour, action weights and fuzz picks. Default random, always printed. The action log, not the seed, is what makes a finding reproducible |
 | `--no-cache` | Ignore cached understanding cards under `qa-kit-artifacts/monkey/_cache/` |
 
-- **From the `test-monkey` agent**: the same procedure, run non-interactively (`${CLAUDE_PLUGIN_ROOT}/agents/test-monkey.md`).
+- **From `agent-monkey`**: the same procedure, run non-interactively (`${CLAUDE_PLUGIN_ROOT}/agents/agent-monkey.md`).
 - **Several areas, in parallel, or from CI**: `/qa-kit:feature-monkey` runs this skill through the runner in stages (below), one fresh agent call per page.
   - `--stage=map`: Steps 0 and 1 only; writes `monkey-state.json` and returns the run slug and the page keys.
   - `--stage=unit --slug=<slug> --page=<page key> --minutes=<n>`: starts with an empty context; repeats the production guard and logs in (Step 0, items 2 and 6); reads `monkey-state.json` and the page card; does Steps 2 to 7 for that one page, then writes its results under `qa-kit-artifacts/monkey/<slug>/units/`, cleans up its own data and returns the pages it discovered.
   - `--stage=finalize --slug=<slug>`: sweeps the cleanup ledger, then does Steps 8 and 9 over all unit results.
   - Without `--stage` the whole procedure runs in this one context, page after page, using the context discipline in Step 2.
 
-**Parallel runs**: several `test-monkey` runs in one interactive session probably share a single Playwright MCP browser and collide; run areas in parallel only through `/qa-kit:feature-monkey`, which starts a separate process (and browser) per area.
+**Parallel runs**: several `agent-monkey` runs in one interactive session probably share a single Playwright MCP browser and collide; run areas in parallel only through `/qa-kit:feature-monkey`, which starts a separate process (and browser) per area.
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: test-deliverer
+name: agent-deliverer
 description: Commits (and, only when told, pushes and opens a PR for) test code that already passed Review. Use as the Deliver stage of the feature-implement workflow (only when --commit, --push or --pr was given), the Deliver stage of the feature-deliver workflow, or standalone for committing changes.
 tools: Bash, Read, Glob, Grep, Skill
 ---

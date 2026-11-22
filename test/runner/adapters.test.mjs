@@ -44,7 +44,7 @@ test('validate checks types, enums, required keys and array items', () => {
 test('claude runs headless print mode with the schema, agent and prompt on stdin', async () => {
   const { exec, calls } = fakeExec({ stdout: JSON.stringify({ is_error: false, structured_output: { blocked: false, planPath: 'p.md' } }) })
   const adapter = claude.createAdapter({ model: 'opus', cwd: '/repo', policy: { commit: false, push: false, pr: false }, exec })
-  const result = await adapter.run({ prompt: 'plan it', agentType: 'qa-kit:test-planner', schema: SCHEMA, label: 'plan:x' })
+  const result = await adapter.run({ prompt: 'plan it', agentType: 'qa-kit:agent-planner', schema: SCHEMA, label: 'plan:x' })
   assert.deepEqual(result, { blocked: false, planPath: 'p.md' })
   const [call] = calls
   assert.equal(call.command, 'claude')
@@ -54,7 +54,7 @@ test('claude runs headless print mode with the schema, agent and prompt on stdin
   const valueOf = flag => args[args.indexOf(flag) + 1]
   assert.ok(args.includes('-p'))
   assert.equal(valueOf('--output-format'), 'json')
-  assert.equal(valueOf('--agent'), 'qa-kit:test-planner')
+  assert.equal(valueOf('--agent'), 'qa-kit:agent-planner')
   assert.deepEqual(JSON.parse(valueOf('--json-schema')), SCHEMA)
   assert.equal(valueOf('--model'), 'opus')
   assert.ok(!args.includes('plan it'))
@@ -99,10 +99,10 @@ test('claude returns null when there is no structured result, on timeout, or whe
 test('opencode extracts and validates the last fenced json block', async () => {
   const { exec, calls } = fakeExec({ stdout: events('thinking', fence({ blocked: true, blockReason: 'x' })) })
   const adapter = opencode.createAdapter({ model: 'anthropic/sonnet', cwd: '/repo', exec })
-  const result = await adapter.run({ prompt: 'plan it', agentType: 'qa-kit-test-planner', schema: SCHEMA, label: 'l' })
+  const result = await adapter.run({ prompt: 'plan it', agentType: 'qa-kit-agent-planner', schema: SCHEMA, label: 'l' })
   assert.deepEqual(result, { blocked: true, blockReason: 'x' })
   assert.equal(calls.length, 1)
-  assert.deepEqual(calls[0].args, ['run', '--agent', 'qa-kit-test-planner', '--format', 'json', '--model', 'anthropic/sonnet'])
+  assert.deepEqual(calls[0].args, ['run', '--agent', 'qa-kit-agent-planner', '--format', 'json', '--model', 'anthropic/sonnet'])
   assert.ok(calls[0].input.startsWith('plan it'))
   assert.ok(calls[0].input.includes('"testType"'))
   assert.ok(calls[0].input.includes('fenced json code block'))

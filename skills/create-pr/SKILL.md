@@ -30,14 +30,14 @@ This is the single highest-leverage step in this whole skill: every mechanical/c
 
 - If `apply-review-fixes` resolves everything down to Nit-level findings (or finds nothing): continue to Step 3. In interactive use its edits (if any) ride along with whatever `commit-and-push` commits next - no separate commit needed for them.
 - If a Blocking/Should-fix finding can't be auto-resolved (e.g. it needs a genuinely new file - `write-tests` territory): stop and tell the human what's still open, and let them decide whether to fix it first or explicitly proceed anyway. Don't silently open the PR with known Blocking findings still in it.
-- **When the caller has no edit tool** (the `test-deliverer` agent, inside the pipeline): the gate cannot apply fixes. If it finds anything Blocking or Should-fix, stop, return blocked with the findings, and point at `/qa-kit:feature-deliver`, whose Review step applies fixes before delivering again. Commit nothing and open no PR in that case.
+- **When the caller has no edit tool** (`agent-deliverer`, inside the pipeline): the gate cannot apply fixes. If it finds anything Blocking or Should-fix, stop, return blocked with the findings, and point at `/qa-kit:feature-deliver`, whose Review step applies fixes before delivering again. Commit nothing and open no PR in that case.
 - Only skip this gate entirely when the human explicitly says to (e.g. "open the PR as-is, skip self-review") - note that explicitly in the final report so it's clear the PR wasn't gated.
 
 ### Step 3: Commit and push
 
 Invoke `commit-and-push` (it is user-invocation-only, so the Skill tool may refuse it - if so, read `${CLAUDE_PLUGIN_ROOT}/skills/commit-and-push/SKILL.md` and follow it directly):
 - **Interactive use** (a human asked for this directly): its normal interactive mode - confirm before it pushes.
-- **Pre-authorized use** (invoked by the `test-deliverer` agent inside `feature-implement`, only when that run was explicitly told to create PRs): tell `commit-and-push` that push is pre-authorized too, so it doesn't ask - PR creation already implies the human wants this branch pushed.
+- **Pre-authorized use** (invoked by `agent-deliverer` inside `feature-implement`, only when that run was explicitly told to create PRs): tell `commit-and-push` that push is pre-authorized too, so it doesn't ask - PR creation already implies the human wants this branch pushed.
 
 ### Step 4: Draft the PR
 

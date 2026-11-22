@@ -2,9 +2,9 @@ export const meta = {
   name: 'feature-monkey',
   description: "AI-driven monkey / exploratory testing of one or more areas of the running app through Playwright MCP - understands each page first (plans, tests, conventions, a read-only look at the UI), explores it within a time budget the script enforces, cleans up the data it created, and writes a report with findings and a findings plan under qa-kit-artifacts/monkey/. Read-only for git and tracked files; never commits, pushes or opens a PR.",
   phases: [
-    { title: 'Map', detail: 'test-monkey agent per area - resolves the area, runs the preflight and writes the page list and monkey-state.json' },
-    { title: 'Explore', detail: 'test-monkey agent per page unit - understands the page (card), monkeys it, cleans up, in a fresh context; the script owns the clock' },
-    { title: 'Finalize', detail: 'test-monkey agent per area - sweeps what is left in the cleanup ledger, merges the unit results into the report and the findings plan' },
+    { title: 'Map', detail: 'agent-monkey per area - resolves the area, runs the preflight and writes the page list and monkey-state.json' },
+    { title: 'Explore', detail: 'agent-monkey per page unit - understands the page (card), monkeys it, cleans up, in a fresh context; the script owns the clock' },
+    { title: 'Finalize', detail: 'agent-monkey per area - sweeps what is left in the cleanup ledger, merges the unit results into the report and the findings plan' },
   ],
 }
 
@@ -98,7 +98,7 @@ const MONKEY_RULES =
 
 async function once(label, prompt, schema, phase, timeoutMs) {
   try {
-    const r = await agent(prompt, { agentType: AGENT_PREFIX + 'test-monkey', phase, label, schema, timeoutMs })
+    const r = await agent(prompt, { agentType: AGENT_PREFIX + 'agent-monkey', phase, label, schema, timeoutMs })
     if (r) return r
     log(`${label} returned nothing`)
   } catch (err) {

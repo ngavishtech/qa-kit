@@ -1,6 +1,6 @@
 {
   "extraKnownMarketplaces": {
-    "ngavish-qa": {
+    "ngavish-tech": {
       "source": {
         "source": "git",
         "url": "<KIT_GIT_URL>"
@@ -8,7 +8,7 @@
     }
   },
   "enabledPlugins": {
-    "qa-kit@ngavish-qa": true
+    "qa-kit@ngavish-tech": true
   },
   "permissions": {
     "allow": [

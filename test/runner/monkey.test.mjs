@@ -159,7 +159,7 @@ test('an area is mapped, explored page by page in fresh calls, then finalized', 
   const adapter = fakeAdapter()
   const [entry] = await run({ areas: ['checkout'] }, adapter)
   assert.deepEqual(stages(adapter), ['map', 'explore', 'explore', 'finalize'])
-  assert.ok(adapter.calls.every(c => c.agentType === 'qa-kit-test-monkey'))
+  assert.ok(adapter.calls.every(c => c.agentType === 'qa-kit-agent-monkey'))
   const units = adapter.calls.filter(c => c.label.startsWith('explore:'))
   assert.match(units[0].prompt, /--stage=unit --slug=checkout-1 --page=\/orders --minutes=5/)
   assert.match(units[1].prompt, /--page=\/orders\/:id/)
@@ -334,9 +334,9 @@ test('a per-call timeout only ever shortens the run limit, in both adapters', as
     resolve,
     exec: async call => (claudeExec.push(call), { code: 0, stdout: JSON.stringify({ structured_output: { blocked: false } }), stderr: '', timedOut: false }),
   })
-  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:test-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 3 * MIN })
-  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:test-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 20 * MIN })
-  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:test-monkey', schema: { type: 'object' }, label: 'l' })
+  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:agent-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 3 * MIN })
+  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:agent-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 20 * MIN })
+  await claudeAdapter.run({ prompt: 'p', agentType: 'qa-kit:agent-monkey', schema: { type: 'object' }, label: 'l' })
   assert.deepEqual(claudeExec.map(call => call.timeoutMs), [3 * MIN, 10 * MIN, 10 * MIN])
 
   const openExec = []
@@ -346,6 +346,6 @@ test('a per-call timeout only ever shortens the run limit, in both adapters', as
     resolve,
     exec: async call => (openExec.push(call), { code: 0, stdout: JSON.stringify({ type: 'text', part: { text: '```json\n{"blocked":false}\n```' } }), stderr: '', timedOut: false }),
   })
-  await openAdapter.run({ prompt: 'p', agentType: 'qa-kit-test-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 4 * MIN })
+  await openAdapter.run({ prompt: 'p', agentType: 'qa-kit-agent-monkey', schema: { type: 'object' }, label: 'l', timeoutMs: 4 * MIN })
   assert.deepEqual(openExec.map(call => call.timeoutMs), [4 * MIN])
 })

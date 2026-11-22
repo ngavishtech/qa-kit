@@ -32,7 +32,7 @@ test('a planning run saves its report, hands it to the next stage and exits 0', 
   const { adapters, calls } = fakeAgents(planAnswer)
   const code = await main(['feature-plan', 'ABC-1', '--agent', 'claude', '--cwd', repo], adapters)
   assert.equal(code, 0)
-  assert.equal(calls[0].agentType, 'qa-kit:test-planner')
+  assert.equal(calls[0].agentType, 'qa-kit:agent-planner')
   assert.deepEqual(calls[0].policy, { commit: false, push: false, pr: false })
   const latest = JSON.parse(readFileSync(path.join(repo, 'qa-kit-artifacts', 'latest', 'feature-plan.json'), 'utf8'))
   assert.equal(latest.report[0].planPath, 'qa-kit-artifacts/ABC-1-test-plan.md')

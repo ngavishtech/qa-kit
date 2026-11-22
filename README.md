@@ -2,9 +2,9 @@
 
 The org's QA automation toolkit for Playwright test repos: plan tests from Jira/Figma/TestRail, write and heal Playwright tests, review, commit and open PRs - one feature at a time with skills, or several in parallel with pipelines. It runs on **Claude Code** and **OpenCode**, from the terminal or inside IntelliJ, WebStorm and VS Code.
 
-**Public and product-agnostic.** The kit carries no company, product or tenant names. Everything specific to your setup (your Glean URL, TestRail instance, secrets) comes from your own environment variables or your own repo files. The marketplace is `ngavish-qa`, served from this repository.
+**Public and product-agnostic.** The kit carries no company, product or tenant names. Everything specific to your setup (your Glean URL, TestRail instance, secrets) comes from your own environment variables or your own repo files. The marketplace is `ngavish-tech`, served from this repository.
 
-Version: **0.8.0** (the top entry of `CHANGELOG.md`; `.claude-plugin/plugin.json` is the source of truth). Status: not yet piloted - read "Pilot checklist" before rolling out.
+Version: **0.9.0** (the top entry of `CHANGELOG.md`; `.claude-plugin/plugin.json` is the source of truth). Status: not yet piloted - read "Pilot checklist" before rolling out.
 
 ## Contents
 
@@ -38,7 +38,7 @@ requirement --> PLAN --> (you review) --> WRITE --> RUN + HEAL --> REVIEW + FIX 
 | Step | Who, how often | What happens | Details |
 |---|---|---|---|
 | 1. Prerequisites | each person, once | git, `gh`, Node 22+, personal credentials in your shell environment | [Prerequisites](#prerequisites-one-time-per-person) |
-| 2. Install the kit | each person, once per machine | Claude Code: a plugin from the `ngavish-qa` marketplace. OpenCode: a clone in `$HOME/.qa-kit-src` plus `install` | [Install the kit](#install-the-kit-once-per-machine) |
+| 2. Install the kit | each person, once per machine | Claude Code: a plugin from the `ngavish-tech` marketplace. OpenCode: a clone in `$HOME/.qa-kit-src` plus `install` | [Install the kit](#install-the-kit-once-per-machine) |
 | 3. Set up the repo | **one person, once per repo** | `/qa-kit:init` writes the repo layer (instructions, permissions, MCP servers, conventions); you review it as a plan, then commit it in a PR | [Set up a repo](#set-up-a-repo-init-once-per-repo) |
 | 3b. Join a repo | everyone else | install the kit (step 2), pull the repo, start the agent in the right folder. No `init` | [Joining](#joining-a-repo-that-is-already-set-up) |
 | 4. Work | everyone, every day | plan -> review -> implement -> deliver, manual or as pipelines | [Day to day](#using-qa-kit-day-to-day) |
@@ -59,7 +59,7 @@ requirement --> PLAN --> (you review) --> WRITE --> RUN + HEAL --> REVIEW + FIX 
 
 | | Claude Code | OpenCode |
 |---|---|---|
-| Install | plugin from the `ngavish-qa` marketplace | `node "$HOME/.qa-kit-src/tools/cli.mjs" install` from a checkout kept outside any project repo (user-level, once per machine) |
+| Install | plugin from the `ngavish-tech` marketplace | `node "$HOME/.qa-kit-src/tools/cli.mjs" install` from a checkout kept outside any project repo (user-level, once per machine) |
 | Skills | `/qa-kit:plan-tests ...` | `/qa-kit-plan-tests ...` |
 | Pipelines (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`) | `/qa-kit:feature-plan ...` (Claude's Workflow tool) | `/qa-kit-feature-plan ...` (runs the Node runner) |
 | Repo instructions | `CLAUDE.md` -> imports `AGENTS.md` | `AGENTS.md` |
@@ -100,29 +100,29 @@ Everyone does this once per machine, including people who join a repo that is al
 
 ```
 /plugin marketplace add https://github.com/ngavishtech/qa-kit
-/plugin install qa-kit@ngavish-qa
+/plugin install qa-kit@ngavish-tech
 ```
 
 The same from a shell, without opening a session (`--scope user` makes it available in every project on the machine):
 
 ```bash
 claude plugin marketplace add https://github.com/ngavishtech/qa-kit
-claude plugin install qa-kit@ngavish-qa --scope user
+claude plugin install qa-kit@ngavish-tech --scope user
 ```
 
-**You do not clone anything for Claude Code.** `qa-kit@ngavish-qa` means "plugin `qa-kit` from the marketplace named `ngavish-qa`", and that name is defined in this repository's `.claude-plugin/marketplace.json`. The first command is what tells Claude Code *where* the repository is: it clones it by itself into `~/.claude/plugins/marketplaces/ngavish-qa` using the git credentials already on your machine (SSH key or credential helper). The second command installs the plugin from that copy. One-command form, Claude Code 2.1.292 or newer: `claude plugin install qa-kit --marketplace ngavishtech/qa-kit --scope user`. Restart Claude Code or run `/reload-plugins` afterwards. (OpenCode is different: it needs the clone below.)
+**You do not clone anything for Claude Code.** `qa-kit@ngavish-tech` means "plugin `qa-kit` from the marketplace named `ngavish-tech`", and that name is defined in this repository's `.claude-plugin/marketplace.json`. The first command is what tells Claude Code *where* the repository is: it clones it by itself into `~/.claude/plugins/marketplaces/ngavish-tech` using the git credentials already on your machine (SSH key or credential helper). The second command installs the plugin from that copy. One-command form, Claude Code 2.1.292 or newer: `claude plugin install qa-kit --marketplace ngavishtech/qa-kit --scope user`. Restart Claude Code or run `/reload-plugins` afterwards. (OpenCode is different: it needs the clone below.)
 
-`claude plugin install qa-kit@ngavish-qa --scope user` refreshes the marketplace first, so it installs the latest version published on the repository's default branch. To be explicit, run `claude plugin marketplace update ngavish-qa` before it. Installing before a release is merged gives you the older version; update afterwards (see "Updating to a new version").
+`claude plugin install qa-kit@ngavish-tech --scope user` refreshes the marketplace first, so it installs the latest version published on the repository's default branch. To be explicit, run `claude plugin marketplace update ngavish-tech` before it. Installing before a release is merged gives you the older version; update afterwards (see "Updating to a new version").
 
 ### Claude desktop app (Windows and Mac, clicks only)
 
 1. Open the app, sign in, click **Customize** in the sidebar, then **Plugins**.
 2. Click **Add**, then **Add marketplace**, and enter `ngavishtech/qa-kit` (or `https://github.com/ngavishtech/qa-kit`).
 3. If the dialog cannot read the repository (for example your GitHub organization restricts apps): click **Connect GitHub**, then **Install the Claude GitHub App**; a GitHub owner may have to approve the app first.
-4. Open the marketplace `ngavish-qa`, select **qa-kit** and click **Add**.
+4. Open the marketplace `ngavish-tech`, select **qa-kit** and click **Add**.
 5. Check: type `/` in a conversation (the skills show with the plugin name), or open a **Code** tab session on your computer and type `/qa-kit:`.
 
-This install belongs to your **account**: Chat, Cowork and the Code tab get it, and a terminal Claude Code only when it is signed in with the same claude.ai account (not with Bedrock or an API key), after `/reload-plugins`. A command-line install (`claude plugin install qa-kit@ngavish-qa --scope user`) is the opposite: it reaches the terminal, IDEs and the Code tab but is not shown under **Customize > Plugins**. If you work in the terminal, use the command; add this account install only for Chat or Cowork. No access to the repo from the app: **Add > Upload plugin** with the ZIP instead. Details, the ZIP route and what each part of the app supports: `docs/CLAUDE-DESKTOP.md`.
+This install belongs to your **account**: Chat, Cowork and the Code tab get it, and a terminal Claude Code only when it is signed in with the same claude.ai account (not with Bedrock or an API key), after `/reload-plugins`. A command-line install (`claude plugin install qa-kit@ngavish-tech --scope user`) is the opposite: it reaches the terminal, IDEs and the Code tab but is not shown under **Customize > Plugins**. If you work in the terminal, use the command; add this account install only for Chat or Cowork. No access to the repo from the app: **Add > Upload plugin** with the ZIP instead. Details, the ZIP route and what each part of the app supports: `docs/CLAUDE-DESKTOP.md`.
 
 ### Org-wide (admins)
 
@@ -130,8 +130,8 @@ Put the same two keys in Claude Code **managed settings**:
 
 ```json
 {
-  "extraKnownMarketplaces": { "ngavish-qa": { "source": { "source": "git", "url": "<git url of this repo>" } } },
-  "enabledPlugins": { "qa-kit@ngavish-qa": true }
+  "extraKnownMarketplaces": { "ngavish-tech": { "source": { "source": "git", "url": "<git url of this repo>" } } },
+  "enabledPlugins": { "qa-kit@ngavish-tech": true }
 }
 ```
 
@@ -161,12 +161,12 @@ Restart OpenCode afterwards. Use the same checkout for `status`, `uninstall` and
 | | Claude Code | OpenCode |
 |---|---|---|
 | Restart | restart Claude Code, or `/reload-plugins` in a running session | restart OpenCode |
-| Version | `claude plugin list` shows `qa-kit@ngavish-qa` with the version of the top entry of `CHANGELOG.md`, scope `user`, enabled | `node "$HOME/.qa-kit-src/tools/cli.mjs" status` |
+| Version | `claude plugin list` shows `qa-kit@ngavish-tech` with the version of the top entry of `CHANGELOG.md`, scope `user`, enabled | `node "$HOME/.qa-kit-src/tools/cli.mjs" status` |
 | Commands | typing `/qa-kit:` lists the commands and skills; `/qa-kit:help` explains them | typing `/qa-kit-` lists them; `/qa-kit-help` explains them |
 
 ### Uninstall
 
-Claude Code: `claude plugin uninstall qa-kit@ngavish-qa` (and `claude plugin marketplace remove ngavish-qa` if you also want the marketplace gone). OpenCode: `node "$HOME/.qa-kit-src/tools/cli.mjs" uninstall`. Neither touches any repo; the files `init` wrote stay until you delete them (the list is under "Set up a repo").
+Claude Code: `claude plugin uninstall qa-kit@ngavish-tech` (and `claude plugin marketplace remove ngavish-tech` if you also want the marketplace gone). OpenCode: `node "$HOME/.qa-kit-src/tools/cli.mjs" uninstall`. Neither touches any repo; the files `init` wrote stay until you delete them (the list is under "Set up a repo").
 
 ## Set up a repo (`init`, once per repo)
 
@@ -320,6 +320,7 @@ Every flag, stage and composition rule is in `patterns/workflows-reference.md`; 
 | find out what a failed nightly run really is | `/qa-kit:triage-failure <report URL> --known=ABC-12,ABC-40` | U |
 | triage in CI and heal on my machine | CI: `triage-failure` without `--heal`; later `--from <triage.json> --heal --groups=g4` | V |
 | explore an area of the running app like a monkey (time-boxed, cleans up after itself) | `/qa-kit:monkey-test checkout --minutes=5 --guidance="odd quantities"`, or several areas: `/qa-kit:feature-monkey checkout "order history"` | Z |
+| find out whether a reported defect is real and whether a test covers it | `/qa-kit:retest-defect ABC-1234` (answer yes to "plan one now?" to get a plan; then `/qa-kit:feature-implement <plan>`) | AA |
 | turn what the monkey confirmed into regression tests | `/qa-kit:feature-implement qa-kit-artifacts/monkey/<slug>/findings-plan.md` | Z |
 | set qa-kit up in a repo that is not only test automation | `/qa-kit:init --path=automation` | R |
 
@@ -349,7 +350,7 @@ It first understands each page (conventions, plan scenarios, existing tests, a r
 
 ### The manual track
 
-One skill at a time (`/qa-kit:help` lists them all with one line each): `read-ticket`, `plan-tests`, `verify-coverage` (is it already covered, do the tests match the plan; read-only), `write-tests`, `discover-locator`, `execute-tests` (report only), `heal-tests`, `triage-failure` (read a failed Allure report, retest only what failed, advise per failure group - bug, known issue, deviation, product gap, test to tune, flaky - using its failure history and the Jira issues you give with `--known`; drafts tickets, never files them; heals only with `--heal`), `monkey-test` (explore one area of the live app like a monkey: understands each page first, time-boxed, removes its own data, writes a report and a findings plan; never on production), `review-tests`, `apply-review-fixes`, `fix-lint`, `write-commit-message` (drafts, never commits), `commit-and-push`, `create-pr` (self-review gate first).
+One skill at a time (`/qa-kit:help` lists them all with one line each): `read-ticket`, `plan-tests`, `verify-coverage` (is it already covered, do the tests match the plan; read-only), `write-tests`, `discover-locator`, `execute-tests` (report only), `heal-tests`, `triage-failure` (read a failed Allure report, retest only what failed, advise per failure group - bug, known issue, deviation, product gap, test to tune, flaky - using its failure history and the Jira issues you give with `--known`; drafts tickets, never files them; heals only with `--heal`), `retest-defect` (read one Jira defect as a defect, reproduce it live, say whether it reproduces and whether a test covers the flow, and offer to plan a regression test; never files or edits Jira, never on production), `monkey-test` (explore one area of the live app like a monkey: understands each page first, time-boxed, removes its own data, writes a report and a findings plan; never on production), `review-tests`, `apply-review-fixes`, `fix-lint`, `write-commit-message` (drafts, never commits), `commit-and-push`, `create-pr` (self-review gate first).
 
 ### Where qa-kit writes files
 
@@ -358,6 +359,7 @@ Everything it produces goes into `qa-kit-artifacts/` in the folder you work in: 
 ### Guarantees you can rely on
 
 - **Planning is read-only.** It writes only to `qa-kit-artifacts/` and never touches git.
+- **The defect retester reproduces and reports; it never files or fixes.** `retest-defect` / `agent-defect-retester` never create, edit, transition or comment on a Jira issue, never touch git, tests or the `.env` file, write only under `qa-kit-artifacts/` (a plan only through `plan-tests`, after you say yes or pass `--plan`), refuse production-looking hosts (no override), follow the same data-safety rules as the monkey tester with an `rt-<runid>-` prefix (a defect that needs data it did not create ends `inconclusive`), and never start `feature-implement` themselves. It has no runner entry, so unlike the monkey tester nothing checks this after the run: it rests on the skill's rules and the agent's tool list (see "Known limitations").
 - **Monkey runs are bounded and clean up.** `monkey-test` / `feature-monkey` refuse production-looking hosts (no override), write only under `qa-kit-artifacts/monkey/`, never touch git or the `.env` file, create data only with a `mk-<runid>-` prefix, delete only what is in their cleanup ledger (one verified item at a time), never delete or change data they did not create, leave anything that looks protected (NOT, SOURCE, SEED, TEMPLATE, KEEP, fixtures the tests use) read-only, and stop at the time budget (default 5 minutes, at most 30), which the workflow script enforces with its own clock. The runner checks afterwards that no tracked file, git state or `.env` changed.
 - **Nothing is committed by `feature-implement` unless you ask** (`--commit`, `--push` or `--pr`); `feature-deliver` is the explicit "commit it now" step. **Nothing is pushed, and no PR is opened, unless you ask** (`--push` / `--pr`, or saying so to `commit-and-push` / `create-pr`). The pipelines never decide this themselves; the runner checks it after every run and denies the commands to the Claude agent. In interactive OpenCode use this rests on the skills' confirmation prompts (see "Known limitations").
 - **Your work is safe.** `.env`, secrets and your uncommitted changes are never staged or discarded; never `git add -A`, `--no-verify` or force-push; never a commit on the default branch. `feature-implement --commit` stages only the files the pipeline produced (`ownedFiles`) and never a file you had modified before the run. `feature-deliver` is the request to deliver everything you changed: it takes every change git shows (not what git ignores), reports your own as `handChanges`, and stops on a secret file. Look at `handChanges` before pushing.
@@ -390,13 +392,13 @@ A release is picked up only when `version` in `.claude-plugin/plugin.json` chang
 Claude Code, in a terminal:
 
 ```bash
-claude plugin marketplace update ngavish-qa
-claude plugin update qa-kit@ngavish-qa
+claude plugin marketplace update ngavish-tech
+claude plugin update qa-kit@ngavish-tech
 ```
 
-then restart Claude Code, or run `/reload-plugins` in a running session; `claude plugin list` shows the new version. Inside a session instead: `/plugin marketplace update ngavish-qa`, then `/plugin`, tab **Installed**, `qa-kit`, **Update now** (or tab **Marketplaces**, `ngavish-qa`, **Update marketplace**), then `/reload-plugins`. "Already at the latest version" means the marketplace listing was not refreshed yet (run the first command) or no new version was published. Marketplaces other than Anthropic's do not auto-update by default: switch it on under `/plugin`, tab **Marketplaces**, `ngavish-qa`, **Enable auto-update**; the update then arrives in the background and `/reload-plugins` applies it.
+then restart Claude Code, or run `/reload-plugins` in a running session; `claude plugin list` shows the new version. Inside a session instead: `/plugin marketplace update ngavish-tech`, then `/plugin`, tab **Installed**, `qa-kit`, **Update now** (or tab **Marketplaces**, `ngavish-tech`, **Update marketplace**), then `/reload-plugins`. "Already at the latest version" means the marketplace listing was not refreshed yet (run the first command) or no new version was published. Marketplaces other than Anthropic's do not auto-update by default: switch it on under `/plugin`, tab **Marketplaces**, `ngavish-tech`, **Enable auto-update**; the update then arrives in the background and `/reload-plugins` applies it.
 
-Claude desktop app, with clicks: **Customize > Plugins**, open the `ngavish-qa` marketplace, **Check for updates** (or **Sync automatically**), then start a new Cowork task or Code tab session. A ZIP install is updated by uploading the new ZIP again (**Add > Upload plugin**). Details: `docs/CLAUDE-DESKTOP.md`.
+Claude desktop app, with clicks: **Customize > Plugins**, open the `ngavish-tech` marketplace, **Check for updates** (or **Sync automatically**), then start a new Cowork task or Code tab session. A ZIP install is updated by uploading the new ZIP again (**Add > Upload plugin**). Details: `docs/CLAUDE-DESKTOP.md`.
 
 OpenCode, three commands on separate lines (never joined with `&&`):
 
@@ -516,7 +518,7 @@ The result is `./qa-kit-artifacts/ABC-1234-test-plan.md`. Review and edit it lik
 | Symptom | Cause and fix |
 |---|---|
 | Typing `/qa-kit:` (or `/qa-kit-`) shows nothing | The kit is not installed on this machine, or the agent was not restarted. Install it, then restart or `/reload-plugins`. Check with `claude plugin list` or `cli.mjs status`. A repo cannot install the kit for you (see "Joining a repo"). |
-| Update says "Already at the latest version" | The marketplace listing was not refreshed: run `claude plugin marketplace update ngavish-qa` first, or no new `version` was published. |
+| Update says "Already at the latest version" | The marketplace listing was not refreshed: run `claude plugin marketplace update ngavish-tech` first, or no new `version` was published. |
 | OpenCode shows the old version after `git pull` | Run `install` again (separate line, not joined with `&&`), then restart OpenCode. `status` compares installed against the checkout. |
 | `init` reports "base for X could not be rebuilt from tag T" | Layer 3 was used (see "How the previous version is rebuilt"). Check access and that the tag exists: `git ls-remote --tags <KIT_GIT_URL> T`. Nothing was overwritten; resolve the review copy in `qa-kit-artifacts/merge/`, or fix access and run `init` again. |
 | `init` asks to run the renderer from a tag | Rendering the tag with the installed kit did not reproduce your files: the renderer, the templates or the variables differ from when they were written. Running the tag's own renderer only helps if the renderer changed. Check that the URL shown is the kit repository, then say yes to try it, or no to use the first-time merge for those files. |
@@ -557,8 +559,8 @@ Reusable GitHub Actions so every test repo runs, reports and notifies the same w
 
 | Path | Contents |
 |---|---|
-| `skills/` | 17 procedures: `help` (one-screen overview of everything), `read-ticket`, `plan-tests`, `verify-coverage`, `write-tests`, `discover-locator`, `execute-tests`, `heal-tests`, `triage-failure`, `monkey-test`, `review-tests`, `apply-review-fixes`, `fix-lint`, `write-commit-message`, `commit-and-push`, `create-pr`, `init` |
-| `agents/` | `test-planner`, `test-writer`, `test-executor`, `test-reviewer`, `test-deliverer`, `test-triager`, `test-monkey`: a role plus tool grants; each runs one skill |
+| `skills/` | 18 procedures: `help` (one-screen overview of everything), `read-ticket`, `plan-tests`, `verify-coverage`, `write-tests`, `discover-locator`, `execute-tests`, `heal-tests`, `triage-failure`, `retest-defect`, `monkey-test`, `review-tests`, `apply-review-fixes`, `fix-lint`, `write-commit-message`, `commit-and-push`, `create-pr`, `init` |
+| `agents/` | `agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`: a role plus tool grants; each runs one skill |
 | `commands/` | Claude Code `/qa-kit:feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey` |
 | `opencode/commands/` | the OpenCode equivalents (thin wrappers around the runner) |
 | `workflows/` | the four pipelines, shared by both agents |
@@ -605,7 +607,7 @@ None of these could be confirmed from documentation or from the build machine (O
 
 1. **Namespaced cross-references** - skills call each other by bare name. Run `/qa-kit:plan-tests <ticket>` and confirm it reaches `read-ticket`. Each skill has a "Plugin note" telling the agent to retry as `qa-kit:<name>` or read the file directly.
 2. **Workflows** - commands call `Workflow` with `scriptPath: ${CLAUDE_PLUGIN_ROOT}/workflows/<name>.js`; confirm the path resolves and `${CLAUDE_PLUGIN_ROOT}` is expanded in command text. If a run says "unknown agent type", pass `--agent-prefix=`.
-3. **Deliver skills** - `commit-and-push`, `create-pr`, `write-commit-message` are user-invocation-only, so `test-deliverer` reads their `SKILL.md` directly; confirm a `--pr` run commits and opens the PR that way, and that a run with no delivery flag leaves the tests uncommitted.
+3. **Deliver skills** - `commit-and-push`, `create-pr`, `write-commit-message` are user-invocation-only, so `agent-deliverer` reads their `SKILL.md` directly; confirm a `--pr` run commits and opens the PR that way, and that a run with no delivery flag leaves the tests uncommitted.
 4. **Install prompt** - after `.claude/settings.json` is committed, check whether a fresh clone is prompted to install the plugin.
 5. **`@AGENTS.md` import** - confirm Claude Code loads `AGENTS.md` through the one-line `CLAUDE.md`.
 6. **Validation** - `claude plugin validate . --strict` is clean.
@@ -615,7 +617,7 @@ None of these could be confirmed from documentation or from the build machine (O
 7. **Install location** - `~/.config/opencode` is the right folder on Windows/macOS/Linux (else use `--dir`); skills, agents and commands load; the `qa-kit-<skill>` command wrappers do not clash with anything OpenCode creates from skills.
 8. **Config shape** - the generated `opencode.json` (`mcp.servers`, `local`/`remote`, `{env:VAR}`) matches the current OpenCode documentation (opencode.ai/docs/mcp-servers: "V2 does not place server names directly under `mcp`"; checked 2026-11-10). Still to confirm on a real launch: your OpenCode version reads it, and remote OAuth works for `atlassian` and `glean_default`.
 9. **Runner adapter** - `opencode run --agent ... --format json` flags match your version; headless runs can be pre-authorized (no permission prompt stalls a run); the JSON block extraction is reliable. The Claude adapter's `claude -p` flags were checked against `claude --help` only.
-10. **Subagents** - `qa-kit-test-*` agents are found and can invoke skills; agent tool restrictions (for example `test-executor` has no `Write`) are Claude-only.
+10. **Subagents** - `qa-kit-agent-*` agents are found and can invoke skills; agent tool restrictions (for example `agent-executor` has no `Write`) are Claude-only.
 11. **Windows** - the runner spawns `claude`/`opencode` and kills process trees correctly (a `.cmd` shim is only run through a shell with plain arguments, so the Claude adapter, which passes a JSON schema, needs the native `claude.exe`); two features in parallel do not collide on Playwright MCP ports or profiles.
 12. **Headless permissions** - a runner-driven agent cannot answer prompts: the Claude adapter allows the git/`gh` commands the pipelines need and denies the rest, so MCP tools and install commands must already be allowed in the repo's settings; the OpenCode adapter sets no tool rules, so only the runner's post-run checks protect it.
 
@@ -625,7 +627,7 @@ None of these could be confirmed from documentation or from the build machine (O
 14. **First consumer** - run `init` in an existing Playwright repo that already has its own `CLAUDE.md`, settings and `.claude/project/*` files: its existing `CLAUDE.md` and settings take the `unknown-base` path and its `.claude/project/*` files the `move` path; confirm the review copies, the new `.qa-kit/project/` content and the list of old files left to delete are right.
 15. **No guard on OpenCode outside the runner** - confirm what OpenCode does with `git push` and `gh pr create` in an interactive session (its default policy allows everything) and whether it honours `disable-model-invocation` on `init`, `commit-and-push`, `create-pr` and `write-commit-message`; decide on permission rules after this check.
 16. **Subfolder install (`--path`)** - on OpenCode: start it in `<folder>` and in the repo root of a mixed repo; confirm `<folder>/opencode.json` and `<folder>/AGENTS.md` load only from the folder, that a Developer-owned root `AGENTS.md` is not hidden by `<folder>/AGENTS.md` (OpenCode reads the nearest one; if it is hidden, pull the root file in through `opencode.json` `instructions`), and that the root session sees none of it. Claude Code was checked: `.mcp.json`, `.claude/settings.json` and `CLAUDE.md` load from the folder you start in, ancestors' `CLAUDE.md` load too, a root session loads `<folder>/CLAUDE.md` only after touching a file in it. Also run one parallel `/qa-kit:feature-implement` from the subfolder and confirm the worktrees land outside the repo and the work happens in `<worktree>/<folder>`.
-17. **Teammate without the kit** - clone a repo already set up by `init` on a machine with no qa-kit: confirm what Claude Code does after the trust dialog (does it fetch the `ngavish-qa` marketplace by itself, does `/reload-plugins` then load `qa-kit`, what does the `/plugin` **Errors** tab say), that `claude plugin install qa-kit@ngavish-qa --scope user` makes `/qa-kit:` appear, and that OpenCode shows no `/qa-kit-` commands until `install`. Also run both update paths ("Updating to a new version") once against a real new version.
+17. **Teammate without the kit** - clone a repo already set up by `init` on a machine with no qa-kit: confirm what Claude Code does after the trust dialog (does it fetch the `ngavish-tech` marketplace by itself, does `/reload-plugins` then load `qa-kit`, what does the `/plugin` **Errors** tab say), that `claude plugin install qa-kit@ngavish-tech --scope user` makes `/qa-kit:` appear, and that OpenCode shows no `/qa-kit-` commands until `install`. Also run both update paths ("Updating to a new version") once against a real new version.
 
 **Merge base rebuilt from the tag (0.4.0)**
 
@@ -643,7 +645,7 @@ None of these could be confirmed from documentation or from the build machine (O
 
 25. **Delivery flags** - run `feature-implement` with no flag on one plan and on several: the tests must be left uncommitted (at the checkout, and at each worktree path in the report) and nothing may be committed; then `feature-deliver` must review and commit them locally, never staging a file that was already modified before the run. Repeat with `--commit`, `--push` and `--pr` and confirm each adds exactly one step.
 26. **Coverage check** - plan a feature whose scenarios partly exist already: duplicates are absent from Test Scenarios and listed in Existing Coverage with `file:line` evidence, partials say which test they extend. Then delete one planned test from a written branch and run `feature-implement`: the Review stage reports `blocked` with the scenario in `coverageGaps`.
-27. **Triage** - run `/qa-kit:triage-failure` on a real failed run that has history, with `--known` set to a few real keys (an open bug, a resolved bug, a story, an epic). Report access: against its Pages URL (private repo: check what the unauthenticated fetch does and that the `gh run download` fallback finds the `allure-results-*` artifact) and against a downloaded results folder. Check that failed-test names map to spec files, that only those tests and their setup project are re-run, and that the history fields the skill reads (`history/history.json`, `extra.history` in `data/test-cases/<uid>.json`, `history/` inside the results artifact) really exist in the Allure 2 layout of your reports, including the "failing since run N" line. One case each: a strong match to an open bug is `known-issue` with no draft; a resolved bug that fails again is a regression-candidate draft; an open bug whose test passes is `flaky` with the advisory; a changed value with a related resolved story is `deviation`; a missing element with an open story is `product-gap`; a moved locator is `test-fix`; Jira unreachable gives "check skipped" and still triages. Then `--heal` on a `test-fix` group (clean spec: healed, re-run, uncommitted; a spec with your own uncommitted edit: `blocked`, untouched), `--from <triage.json> --heal --groups=g4` in a fresh session, and the `qa-kit:test-triager` agent. Nothing may be created in Jira at any point.
+27. **Triage** - run `/qa-kit:triage-failure` on a real failed run that has history, with `--known` set to a few real keys (an open bug, a resolved bug, a story, an epic). Report access: against its Pages URL (private repo: check what the unauthenticated fetch does and that the `gh run download` fallback finds the `allure-results-*` artifact) and against a downloaded results folder. Check that failed-test names map to spec files, that only those tests and their setup project are re-run, and that the history fields the skill reads (`history/history.json`, `extra.history` in `data/test-cases/<uid>.json`, `history/` inside the results artifact) really exist in the Allure 2 layout of your reports, including the "failing since run N" line. One case each: a strong match to an open bug is `known-issue` with no draft; a resolved bug that fails again is a regression-candidate draft; an open bug whose test passes is `flaky` with the advisory; a changed value with a related resolved story is `deviation`; a missing element with an open story is `product-gap`; a moved locator is `test-fix`; Jira unreachable gives "check skipped" and still triages. Then `--heal` on a `test-fix` group (clean spec: healed, re-run, uncommitted; a spec with your own uncommitted edit: `blocked`, untouched), `--from <triage.json> --heal --groups=g4` in a fresh session, and the `qa-kit:agent-triager` agent. Nothing may be created in Jira at any point.
 28. **Ledger across runs** - on a real repo: `feature-implement <plan> --level=smoke`, then `--level=sanity` (no `--commit`), then `feature-deliver`. Both runs' specs and any support files they created are committed once; a file you edited by hand before the first run is never staged and appears in `skippedPaths`; the second run's Write prompt names the first run's files and does not list them as yours. Between the runs and the deliver, add a test, edit a support file and change an application file by hand, and also touch a file you had been editing before the first run: all four are committed, listed in `handChanges`, mentioned in the commit message, and the runner prints a warning naming them (the test files are reviewed first). Add a gitignored file: it never shows up. Put a fake `.env` that is not ignored in the folder: `feature-deliver` stops and says so. Repeat in a fresh Claude Code session (no report in the conversation): the first run's files count as yours, so Deliver leaves them out and says so.
 29. **Idempotence and `Extends`** - run `feature-implement` twice on the same plan: the second run writes no new test. Plan a feature with a scenario that partly exists: the new test is added to the existing spec and `describe`, reusing its setup, and the existing test is untouched.
 30. **Test index** - run `npx playwright test --list --reporter=json` on a real repo and check the fields `verify-coverage`, `plan-tests` and `write-tests` read (file, line, title path, tags, annotations), including with `--grep @feature-tag` on a large suite. Note any repo where the command is slow or fails and set a different *List tests* row in its `conventions.md`.
@@ -651,7 +653,11 @@ None of these could be confirmed from documentation or from the build machine (O
 
 **Monkey tester (0.7.0)**
 
-32. **Monkey test** - on a real staging app with a test account: `/qa-kit:monkey-test <area> --minutes=2`, then `/qa-kit:feature-monkey <a> <b> --minutes=2 --parallel=2`, through the runner as well (`node runner/qa-kit.mjs feature-monkey <a> --agent opencode`). Check: a production-looking URL is refused; `pages/<key>.md` exists before the first `action-log.jsonl` line for that page and cites plan and test sources; a second run reuses `_cache/` cards and a changed plan file rebuilds them; elapsed time stays within budget plus grace (the workflow clock stops starting new page units); everything created is named `mk-<runid>-` and gone afterwards (`cleanup: clean`), and `--read-only` creates nothing; a killed run leaves a ledger that `leftBehind` / the next report names; no tracked file, git state or `.env` changed (exit code 3 otherwise); no secret or `.env` value in any written file; `findings-plan.md` is accepted by `/qa-kit:feature-implement`. Data safety: before the run, plant on the test account an item named `Source - do not delete`, one named `NOT for cleanup`, one locked or read-only item, and use one record your own tests rely on; after the run all four are unchanged, none was copied or used as the source of a copy, and the report lists them under "left alone"; a delete is never preceded by a select-all or any bulk action in the action log. Also verify what is unverified: that parallel `test-monkey` agents inside one interactive Claude session really share one Playwright MCP browser (the docs say parallel areas belong in the runner), that the `Workflow` tool honors the per-call `timeoutMs`, and that `Write(./qa-kit-artifacts/**)` needs no extra prompt in `settings.json`.
+32. **Monkey test** - on a real staging app with a test account: `/qa-kit:monkey-test <area> --minutes=2`, then `/qa-kit:feature-monkey <a> <b> --minutes=2 --parallel=2`, through the runner as well (`node runner/qa-kit.mjs feature-monkey <a> --agent opencode`). Check: a production-looking URL is refused; `pages/<key>.md` exists before the first `action-log.jsonl` line for that page and cites plan and test sources; a second run reuses `_cache/` cards and a changed plan file rebuilds them; elapsed time stays within budget plus grace (the workflow clock stops starting new page units); everything created is named `mk-<runid>-` and gone afterwards (`cleanup: clean`), and `--read-only` creates nothing; a killed run leaves a ledger that `leftBehind` / the next report names; no tracked file, git state or `.env` changed (exit code 3 otherwise); no secret or `.env` value in any written file; `findings-plan.md` is accepted by `/qa-kit:feature-implement`. Data safety: before the run, plant on the test account an item named `Source - do not delete`, one named `NOT for cleanup`, one locked or read-only item, and use one record your own tests rely on; after the run all four are unchanged, none was copied or used as the source of a copy, and the report lists them under "left alone"; a delete is never preceded by a select-all or any bulk action in the action log. Also verify what is unverified: that parallel `agent-monkey` agents inside one interactive Claude session really share one Playwright MCP browser (the docs say parallel areas belong in the runner), that the `Workflow` tool honors the per-call `timeoutMs`, and that `Write(./qa-kit-artifacts/**)` needs no extra prompt in `settings.json`.
+
+**Defect retester (0.9.0)**
+
+33. **Retest defect** - on a real staging app with a test account and real defect tickets: `/qa-kit:retest-defect <key>` for (a) a resolved defect with clear steps, (b) an open defect that still exists, (c) a defect with no steps, (d) a defect whose steps need a specific existing record. Check: (a) and (b) give the verdicts you know to be true, with the ticket status shaping the reading (regression candidate, or "maybe fixed"); (c) is `inconclusive` and nothing was attempted; (d) is `inconclusive` and the record is untouched; a production-looking URL is refused; everything created is named `rt-<runid>-` and gone afterwards; no Jira issue changed; no tracked file, git state or `.env` changed (nothing checks this in code, so look). Coverage: a test that only visits the page is not counted as covering; a defect that reproduces while a covering test exists names why that test does not catch it. Answer yes to "plan one now?": a plan appears under `qa-kit-artifacts/`, its Open Questions mention that the test fails until the fix, and nothing is implemented; `--no-plan` never asks. Also verify what is unverified: how much of a ticket's screenshots and attachments the Atlassian and Glean MCP servers actually return (the report must say per attachment whether it was read), and that the `agent-defect-retester` returns `offerPlan` instead of asking.
 
 **CI actions** - see the checklist at the end of `actions/README.md`.
 
@@ -665,5 +671,6 @@ None of these could be confirmed from documentation or from the build machine (O
 - Subfolder install (`init --path`): the agent must be started in that folder; at the repo root nothing loads at start, and Claude Code can still pick up `<folder>/CLAUDE.md` later in a session that reads or edits a file in it. The CI workflow is only offered with a TODO (the actions have no `working-directory` input). Verified with Claude Code; the OpenCode side is item 16 of the pilot checklist.
 - Updating a repo needs read access to the kit repository (the git credentials you already use) and the kit tag that wrote your files. Offline, in CI without access, or after a tag was removed or moved, the affected files fall back to a first-time merge (review copy, nothing overwritten) and `init` reports them.
 - Atlassian MCP stays on the v1 endpoint for now; move to v2 before 2027-03-01 and re-check tool names and permissions.
+- Defect retester: it has no workflow or runner entry, so the runner's post-run checks (no tracked file, git state or `.env` change) do not apply to it. Its limits rest on the skill's rules and the agent's tool list (no `Edit` tool; `Bash` and `Write` are granted). It reads attachments only as far as the Atlassian and Glean tools return them.
 - Monkey tester: parallel areas share one app and one test account; the budget is enforced by the workflow clock only when run through `feature-monkey` (a direct `monkey-test` run reads a `node` clock the skill checks itself); a killed run cannot clean up, so the report names the ledger to sweep; traces, video and Allure/Playwright repro specs are not produced yet.
 - Skills and commands are namespaced: `/qa-kit:feature-plan` (Claude Code) and `/qa-kit-feature-plan` (OpenCode), not `/feature-plan`.

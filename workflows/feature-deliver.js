@@ -2,8 +2,8 @@ export const meta = {
   name: 'feature-deliver',
   description: 'Review (with a confirming re-review after fixes) and deliver (commit, push/PR if authorized) tests already on a branch - standalone tail end of feature-implement for branches that only need Review/Deliver, not Write/Execute',
   phases: [
-    { title: 'Review', detail: 'test-reviewer agent per target - reviews, fixes unless args.apply === false, confirms with a re-review if apply-review-fixes changed anything, no git' },
-    { title: 'Deliver', detail: 'test-deliverer agent per target - always commits (running this workflow is the request to deliver); push/PR only if authorized' },
+    { title: 'Review', detail: 'agent-reviewer per target - reviews, fixes unless args.apply === false, confirms with a re-review if apply-review-fixes changed anything, no git' },
+    { title: 'Deliver', detail: 'agent-deliverer per target - always commits (running this workflow is the request to deliver); push/PR only if authorized' },
   ],
 }
 
@@ -34,10 +34,10 @@ export const meta = {
 // explicitly requested) after reviewing each branch.
 // args.createPr: optional, default false. Only true when the human's original request explicitly
 // asked for PRs to be opened for this run. Implies push (you can't PR an unpushed branch).
-// args.apply: optional, default true. The Review stage applies its own findings (test-reviewer
+// args.apply: optional, default true. The Review stage applies its own findings (agent-reviewer
 // invokes review-tests, then apply-review-fixes, then a confirming re-review via review-tests if
 // anything actually changed) unless this is explicitly false, in which case it only reviews and
-// reports (test-reviewer invokes review-tests alone, no edits, no re-review - there's nothing to
+// reports (agent-reviewer invokes review-tests alone, no edits, no re-review - there's nothing to
 // confirm). Default is true for the same reason feature-implement.js's args.apply defaults true -
 // Deliver should receive a clean, already-fixed branch, not a pile of unactioned findings.
 // No args.heal - there is no Execute stage in this workflow.
@@ -157,12 +157,12 @@ async function runStage(prev, stageName, agentType, skill, prompt, schema, label
 
 function reviewStage(target) {
   const skill = APPLY ? 'apply-review-fixes' : 'review-tests'
-  return runStage(target, 'review', 'test-reviewer', skill, reviewPrompt(target), REVIEW_SCHEMA, `review:${target.branch}`)
+  return runStage(target, 'review', 'agent-reviewer', skill, reviewPrompt(target), REVIEW_SCHEMA, `review:${target.branch}`)
 }
 
 function deliverStage(reviewed) {
   const skill = PR_AUTHORIZED ? 'create-pr' : 'commit-and-push'
-  return runStage(reviewed, 'deliver', 'test-deliverer', skill, deliverPrompt(reviewed), DELIVER_SCHEMA, `deliver:${reviewed.branch}`)
+  return runStage(reviewed, 'deliver', 'agent-deliverer', skill, deliverPrompt(reviewed), DELIVER_SCHEMA, `deliver:${reviewed.branch}`)
 }
 
 const allResults = []

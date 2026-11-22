@@ -1,6 +1,6 @@
 # Allure report archive (gh-pages as a data branch)
 
-How `actions/vutef-run.yml` keeps **every** Allure report, each at its own permanent URL, instead of overwriting one report on every run. This page explains what happens, why it is built this way, how retention and cleanup work, and what a new repo needs to use it.
+How `actions/playwright-run.yml` keeps **every** Allure report, each at its own permanent URL, instead of overwriting one report on every run. This page explains what happens, why it is built this way, how retention and cleanup work, and what a new repo needs to use it.
 
 | In this folder | What it is |
 |---|---|
@@ -8,7 +8,7 @@ How `actions/vutef-run.yml` keeps **every** Allure report, each at its own perma
 | `scripts/allure-index.js` | `summary` (per-run metadata), `index` (landing page), `prune` (retention) |
 | `scripts/cleanup-gh-pages.sh` | on-demand cleanup by hand (dry run by default) |
 
-The workflow is `actions/vutef-run.yml` (one level up). Both the workflow and the scripts are **copied** into the consuming repo; nothing here runs from qa-kit at CI time. Not wired into `/qa-kit:init`.
+The workflow is `actions/playwright-run.yml` (one level up). Both the workflow and the scripts are **copied** into the consuming repo; nothing here runs from qa-kit at CI time. Not wired into `/qa-kit:init`.
 
 ## What you get
 
@@ -25,7 +25,7 @@ index.html                    landing page: latest per environment + table of al
 
 ## What happens in a run
 
-All steps are in `vutef-run.yml`, after the tests ran (every step uses `if: always()` so a failed test run still reports).
+All steps are in `playwright-run.yml`, after the tests ran (every step uses `if: always()` so a failed test run still reports).
 
 | Step | What and why |
 |---|---|
@@ -94,7 +94,7 @@ scripts/cleanup-gh-pages.sh --older-than 30 --apply           # same rule as KEE
 ```
 
 - Needs git, node and push access to `gh-pages`; run it from a clone of the consuming repo.
-- Refuses to start while the workflow has a run in progress or queued (`--force` skips; needs the `gh` CLI, otherwise it warns and relies on the push lease). The workflow file name is `vutef-run.yml`; set `WORKFLOW_FILE` if yours differs.
+- Refuses to start while the workflow has a run in progress or queued (`--force` skips; needs the `gh` CLI, otherwise it warns and relies on the push lease). The workflow file name is `playwright-run.yml`; set `WORKFLOW_FILE` if yours differs.
 - Pushes one replacement commit like a publish does; the push is rejected, changing nothing, if the branch moved meanwhile. Just run it again.
 - `--backup <file.tar.gz>` saves the branch as it was. Once pushed, a removal cannot be undone otherwise.
 - It never checks out the legacy root folders (old nested `history/history/...` paths exceed the Windows path limit).
@@ -103,7 +103,7 @@ scripts/cleanup-gh-pages.sh --older-than 30 --apply           # same rule as KEE
 ## Applying it to a new repo
 
 1. **Copy the files.**
-   - `actions/vutef-run.yml` to `.github/workflows/vutef-run.yml`.
+   - `actions/playwright-run.yml` to `.github/workflows/playwright-run.yml`.
    - `actions/allure-archive/scripts/*` to `scripts/` (the workflow calls `scripts/publish-allure-report.sh`; keep the three together).
 2. **Keep shell scripts LF.** Add `scripts/*.sh text eol=lf` to `.gitattributes` (CRLF breaks the shebang on the Linux runner).
 3. **Ignore the new output folder** `allure-report-single/` in `.gitignore`, `.prettierignore` and the eslint ignores (next to `allure-report/`).

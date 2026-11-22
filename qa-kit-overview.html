@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qa-kit: requirement in, reviewed Playwright tests out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16112E;
+  --ink-2:#241C4A;
+  --ink-3:#352B66;
+  --violet:#7A22F2;
+  --violet-d:#5C12C4;
+  --violet-soft:#EBDFFE;
+  --mist:#F6F3FC;
+  --paper:#FFFFFF;
+  --line:#DDD5EF;
+  --text:#1D1838;
+  --muted:#5B5478;
+  --pass:#12A150;
+  --pass-soft:#DDF4E7;
+  --pass-lt:#47E39A;
+  --warn:#B86E00;
+  --warn-soft:#FFF0D2;
+  --fail:#D6335A;
+  --display:"Bricolage Grotesque","Bahnschrift","DIN Alternate","Segoe UI",system-ui,sans-serif;
+  --body:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",ui-monospace,Consolas,monospace;
+  --wrap:1200px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;font-family:var(--body);font-size:1.0625rem;line-height:1.6;color:var(--text);background:var(--paper);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--display);margin:0;line-height:1.08;letter-spacing:-.02em;color:var(--ink)}
+p{margin:0}
+a{color:inherit}
+code,.mono{font-family:var(--mono);font-size:.88em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--violet);outline-offset:3px;border-radius:4px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 28px}
+.hero-grid>*,.flow>*,.setup>*,.start>*,.status>*,.tools>*,.agents>*,.guards>*,.modes>*,.mk-steps>*,.mk-grid>*{min-width:0}
+body{overflow-x:hidden}
+section{padding:64px 0}
+.sec-head{max-width:760px;margin-bottom:32px}
+.sec-head h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:800}
+.sec-head p{margin-top:12px;color:var(--muted);font-size:1.15rem;max-width:62ch}
+.on-dark .sec-head h2{color:#fff}
+.on-dark .sec-head p{color:#C9C0E6}
+.bg-mist{background:var(--mist)}
+.bg-ink{background:var(--ink);color:#E9E4FA}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:var(--ink);border-bottom:1px solid #ffffff14}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:60px}
+.brand{font-family:var(--display);font-weight:800;font-size:1.25rem;color:#fff;text-decoration:none;letter-spacing:-.02em;white-space:nowrap}
+.brand b{color:var(--violet-soft)}
+.nav ul{display:flex;gap:4px;list-style:none;margin:0 0 0 auto;padding:0;overflow-x:auto}
+.nav a.lnk{display:block;padding:8px 12px;border-radius:8px;color:#BDB3E0;text-decoration:none;font-size:.95rem;font-weight:500;white-space:nowrap}
+.nav a.lnk:hover{color:#fff}
+.nav a.lnk.active{color:#fff;background:#ffffff1c}
+.tag-int{font-size:.8rem;border:1px solid #ffffff33;color:#BDB3E0;padding:3px 10px;border-radius:99px;white-space:nowrap}
+
+/* hero */
+.hero{background:var(--ink);color:#fff;padding:64px 0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,11fr) minmax(0,10fr);gap:48px;align-items:center}
+.hero h1{font-size:clamp(2.4rem,4.7vw,4.2rem);font-weight:800;color:#fff;letter-spacing:-.035em;line-height:1}
+.hero h1 span{display:block;color:#B9A0F7}
+.hero .lede{margin-top:26px;font-size:1.22rem;color:#CFC7EC;max-width:46ch}
+.facts{display:flex;flex-wrap:wrap;gap:10px 24px;margin:40px 0 0;padding:26px 0 0;border-top:1px solid #ffffff1f}
+.facts div{display:flex;flex-direction:column}
+.facts dt{font-family:var(--display);font-size:1.7rem;font-weight:700;color:#fff;line-height:1}
+.facts dd{margin:4px 0 0;font-size:.9rem;color:#A99FD1}
+
+/* terminal */
+.term{background:#0D0A1F;border:1px solid #ffffff1c;border-radius:14px;box-shadow:0 30px 60px -20px #000a;overflow:hidden}
+.term-bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#17123A;border-bottom:1px solid #ffffff14}
+.term-bar i{width:11px;height:11px;border-radius:50%;background:#ffffff2a}
+.term-bar span{margin-left:8px;font-size:.82rem;color:#9C92C6;font-family:var(--mono)}
+.term-bar button{margin-left:auto;background:#ffffff14;border:0;color:#E1DAF8;border-radius:7px;padding:5px 12px;font-size:.82rem}
+.term-bar button:hover{background:#ffffff26}
+.term-body{padding:18px 20px 20px;font-family:var(--mono);font-size:.86rem;line-height:1.7;min-height:440px;max-height:440px;overflow:hidden;color:#D8D1F2;display:flex;flex-direction:column;justify-content:flex-end}
+.term-body .l{white-space:pre-wrap;word-break:break-word}
+.l.cmd{color:#fff;margin-top:8px}
+.l.cmd::before{content:"$ ";color:var(--pass-lt)}
+.l.dim{color:#8D83B8}
+.l.ok{color:var(--pass-lt)}
+.l.stop{color:#FFC65C}
+.l .who{color:#B9A0F7}
+.caret{display:inline-block;width:8px;height:1em;background:#fff;vertical-align:-2px;margin-left:2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.rail{display:flex;gap:0;padding:14px 16px 16px;border-top:1px solid #ffffff14;background:#120E2C}
+.rail .st{flex:1;text-align:center;font-size:.76rem;color:#7F75A8;position:relative;padding-top:18px;font-weight:500}
+.rail .st::before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;border-radius:50%;background:#2B2358;transform:translateX(-50%);z-index:1;transition:background .3s,box-shadow .3s}
+.rail .st::after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:#2B2358;transition:background .3s}
+.rail .st:first-child::after{display:none}
+.rail .st.done{color:#CFC7EC}
+.rail .st.done::before,.rail .st.done::after{background:var(--pass-lt)}
+.rail .st.now{color:#fff}
+.rail .st.now::before{background:#fff;box-shadow:0 0 0 4px #ffffff2e}
+.rail .st.hold::before{background:#FFC65C;box-shadow:0 0 0 4px #ffc65c33}
+.rail .st.hold{color:#FFC65C}
+.rail .st.hold::after{background:var(--pass-lt)}
+.rail .st.now::after{background:var(--pass-lt)}
+.rail .st.now.hold::after{background:var(--pass-lt)}
+
+/* why */
+.why-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.why-row{display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px;background:var(--mist);border:1px solid var(--line);border-radius:14px;min-width:0}
+.why-row .q{font-family:var(--display);font-size:1.12rem;font-weight:700;color:var(--ink);line-height:1.2}
+.why-row .q small{display:block;font-family:var(--body);font-weight:400;font-size:.88rem;color:var(--muted);margin-top:4px;letter-spacing:0;line-height:1.4}
+.why-row .a{padding-left:12px;border-left:3px solid var(--violet);font-size:.9rem;line-height:1.45}
+.why-row .a b{color:var(--ink)}
+.why-row:last-child{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px;align-items:center}
+#why .sec-head{max-width:none}
+#why .sec-head h2{font-size:clamp(1.7rem,2.9vw,2.4rem)}
+#why .sec-head p{margin-top:8px;font-size:1.02rem;max-width:90ch}
+
+/* flow explorer */
+.flow{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;align-items:start}
+.steps{display:flex;flex-direction:column;gap:6px;position:sticky;top:84px}
+.step{display:flex;align-items:center;gap:14px;text-align:left;background:transparent;border:1px solid transparent;border-radius:12px;padding:14px 16px;font-weight:600;color:var(--muted);transition:background .15s,border-color .15s}
+.step .n{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:.95rem;background:var(--paper);border:2px solid var(--line);color:var(--muted)}
+.step:hover{background:var(--paper)}
+.step[aria-selected="true"]{background:var(--paper);border-color:var(--line);color:var(--ink);box-shadow:0 8px 24px -14px #3b1a8a55}
+.step[aria-selected="true"] .n{background:var(--violet);border-color:var(--violet);color:#fff}
+.step.human .n{border-color:#E8B04A;background:var(--warn-soft);color:var(--warn)}
+.step.human[aria-selected="true"] .n{background:var(--warn);border-color:var(--warn);color:#fff}
+.step .opt{margin-left:auto;font-size:.75rem;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:36px 38px 34px;min-height:520px}
+.panel h3{font-size:2rem;font-weight:800}
+.panel .who{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 20px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.8rem;padding:4px 11px;border-radius:99px;background:var(--violet-soft);color:var(--violet-d);font-weight:500}
+.chip.is-agent{background:var(--ink);color:#E1DAF8}
+.chip.you{background:var(--warn-soft);color:var(--warn)}
+.panel .lead{font-size:1.15rem;max-width:60ch}
+.panel .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:26px}
+.panel h4{font-size:1rem;font-family:var(--body);font-weight:600;letter-spacing:0;margin-bottom:8px;color:var(--ink)}
+.panel ul{margin:0;padding-left:20px;color:var(--muted)}
+.panel li{margin:5px 0}
+.panel .guard{margin-top:26px;padding:14px 18px;border-radius:12px;background:var(--pass-soft);color:#0B5B2E;font-size:.97rem}
+.panel .guard.hum{background:var(--warn-soft);color:#6F4200}
+pre.cmd{margin:24px 0 0;background:var(--ink);color:#EDE7FF;padding:14px 18px;border-radius:12px;font-family:var(--mono);font-size:.86rem;overflow-x:auto;line-height:1.7}
+pre.cmd .c{color:#8D83B8}
+
+
+/* tabs */
+.tabs{display:inline-flex;background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:18px}
+.tabs button{background:transparent;border:0;border-radius:9px;padding:9px 20px;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:#fff}
+.bg-mist .tabs{background:var(--paper)}
+
+/* skills */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.fchip{background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:7px 16px;font-weight:500;font-size:.95rem;color:var(--muted)}
+.fchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.skill-list{border-top:1px solid var(--line);background:var(--paper);border-radius:14px;border:1px solid var(--line);overflow:hidden}
+details.sk{border-bottom:1px solid var(--line)}
+details.sk:last-child{border-bottom:0}
+details.sk summary{list-style:none;display:grid;grid-template-columns:30px 230px minmax(0,1fr) 120px;gap:16px;align-items:center;padding:17px 22px;cursor:pointer}
+details.sk summary::-webkit-details-marker{display:none}
+details.sk summary:hover{background:var(--mist)}
+details.sk .tw{width:22px;height:22px;border-radius:6px;background:var(--violet-soft);position:relative}
+details.sk .tw::before,details.sk .tw::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:2px;background:var(--violet-d);transform:translate(-50%,-50%);transition:transform .2s}
+details.sk .tw::after{transform:translate(-50%,-50%) rotate(90deg)}
+details.sk[open] .tw::after{transform:translate(-50%,-50%) rotate(0)}
+details.sk .nm{font-family:var(--mono);font-weight:500;color:var(--ink);font-size:.95rem}
+details.sk .ds{color:var(--muted);font-size:.98rem}
+details.sk .ph{font-size:.82rem;color:var(--violet-d);background:var(--violet-soft);border-radius:99px;padding:3px 12px;text-align:center;justify-self:end}
+details.sk .more{padding:2px 22px 22px 68px;display:grid;gap:12px;max-width:900px}
+details.sk .more p{color:var(--text)}
+details.sk .more pre.cmd{margin:0;white-space:pre-wrap;word-break:break-word}
+details.sk .more h5{margin:6px 0 -4px;font:600 .85rem var(--body);color:var(--muted);letter-spacing:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.meta .chip{font-size:.78rem}
+.agents{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px}
+.agent{background:var(--ink);border-radius:16px;padding:22px 22px 24px;color:#D8D1F2}
+.agent h4{color:#fff;font-family:var(--mono);font-size:1rem;font-weight:500;letter-spacing:0}
+.agent p{font-size:.94rem;margin-top:10px;color:#C2B9E4}
+.agent .runs{margin-top:14px;font-size:.84rem;color:#9C92C6}
+.agent .runs code{color:#B9A0F7}
+
+.modes{margin-top:18px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.5fr);gap:0;background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.modes>div{padding:22px 24px;min-width:0}
+.mode-t h3{font-size:1.25rem;font-weight:700}
+.mode-t p{margin-top:6px;color:var(--muted);font-size:.95rem}
+.mode{border-left:1px solid var(--line)}
+.mode b{display:block;font-family:var(--display);font-size:1.1rem;color:var(--ink);margin-bottom:4px}
+.mode span{color:var(--muted);font-size:.95rem;display:block}
+.mode code{background:var(--mist);padding:1px 6px;border-radius:5px;font-size:.82rem;color:var(--ink)}
+.mode.pipe{background:var(--violet-soft)}
+.mode.pipe b{color:var(--violet-d)}
+.mode.pipe span{color:#3B2A66}
+.mode.pipe code{background:#fff}
+
+/* monkey */
+.mk-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;counter-reset:m}
+.mk-steps li{counter-increment:m;background:var(--mist);border:1px solid var(--line);border-radius:16px;padding:22px 22px 24px}
+.mk-steps li::before{content:counter(m);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--violet);color:#fff;font-family:var(--display);font-weight:700;margin-bottom:14px}
+.mk-steps b{display:block;font-family:var(--display);font-size:1.2rem;color:var(--ink);margin-bottom:6px}
+.mk-steps span{display:block;color:var(--muted);font-size:.95rem}
+.mk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.mk-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:24px 24px 18px}
+.mk-card.fence{border-top:4px solid var(--pass)}
+.mk-card h3{font-size:1.2rem;font-weight:700;margin-bottom:10px}
+.mk-card ul{margin:0;padding-left:18px;color:var(--muted);font-size:.95rem}
+.mk-card li{margin:7px 0}
+.mk-card li b{color:var(--ink)}
+.mk-card code{background:var(--mist);padding:1px 6px;border-radius:5px;font-size:.82rem;color:var(--ink)}
+pre.mk-cmd{margin-top:16px}
+pre.mk-cmd .c{color:#8D83B8}
+
+/* tools */
+.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.tool{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:8px}
+.tool h4{font-size:1.2rem;font-weight:700}
+.tool .ft{color:var(--muted);font-size:.93rem;flex:1}
+.tool .cred{font-size:.78rem;font-family:var(--mono);padding:4px 10px;border-radius:8px;width:fit-content;max-width:100%;overflow-wrap:anywhere}
+.cred.oauth{background:var(--pass-soft);color:#0B5B2E}
+.cred.env{background:var(--warn-soft);color:#6F4200}
+.cred.none{background:var(--mist);color:var(--muted)}
+.tool .req{font-size:.8rem;color:var(--muted)}
+.tool:nth-child(3),.tool:nth-child(4){border-style:dashed}
+.note{margin-top:22px;color:var(--muted);font-size:.98rem;max-width:80ch}
+
+/* guard */
+.guards{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--paper)}
+.guard-i{padding:30px 28px 32px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.guard-i:nth-child(3n){border-right:0}
+.guard-i:nth-child(n+7){border-bottom:0}
+.guard-i h3{font-size:1.3rem;font-weight:700;margin-bottom:10px}
+.guard-i p{color:var(--muted);font-size:.98rem}
+.guard-i .ic{width:36px;height:36px;border-radius:10px;background:var(--pass-soft);color:var(--pass);display:grid;place-items:center;margin-bottom:16px}
+.guard-i .ic svg{width:20px;height:20px}
+.guard-i .enf{margin-top:14px;font-size:.84rem;font-family:var(--mono);color:var(--violet-d)}
+.callout{margin-top:24px;display:flex;gap:16px;align-items:flex-start;background:var(--warn-soft);border-radius:14px;padding:18px 22px;color:#5E3A00;max-width:960px}
+.callout svg{flex:none;width:22px;height:22px;margin-top:3px}
+
+/* agents toggle */
+.cmp{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:1rem}
+.cmp th,.cmp td{text-align:left;padding:15px 22px;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp th{width:210px;font-weight:600;color:var(--muted);background:var(--mist)}
+.cmp tr:last-child th,.cmp tr:last-child td{border-bottom:0}
+.cmp td code{background:var(--mist);padding:2px 7px;border-radius:6px;overflow-wrap:anywhere}
+.ide{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.ide span{border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:6px 16px;font-weight:500;font-size:.95rem}
+
+/* setup */
+.sub-block{margin-top:72px}
+#setup details.dd{background:var(--mist)}
+.setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+.flow-list{list-style:none;margin:0;padding:0;counter-reset:s}
+.flow-list li{counter-increment:s;position:relative;padding:0 0 22px 52px}
+.flow-list li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--violet);color:#fff;font-family:var(--display);font-weight:700;display:grid;place-items:center}
+.flow-list li::after{content:"";position:absolute;left:16px;top:38px;bottom:4px;width:2px;background:var(--line)}
+.flow-list li:last-child::after{display:none}
+.flow-list b{display:block;color:var(--ink);font-size:1.08rem}
+.flow-list span{color:var(--muted)}
+details.dd{background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:12px}
+details.dd summary{list-style:none;cursor:pointer;padding:18px 22px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between;gap:16px;font-size:1.05rem}
+details.dd summary::-webkit-details-marker{display:none}
+details.dd summary::after{content:"+";font-size:1.4rem;line-height:1;color:var(--violet);transition:transform .2s}
+details.dd[open] summary::after{transform:rotate(45deg)}
+details.dd .in{padding:0 22px 20px;color:var(--muted)}
+details.dd .in p+p{margin-top:10px}
+.sts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.s{font-family:var(--mono);font-size:.78rem;padding:3px 10px;border-radius:8px;background:var(--mist);color:var(--ink)}
+.s.g{background:var(--pass-soft);color:#0B5B2E}
+.s.y{background:var(--warn-soft);color:#6F4200}
+.s.r{background:#FDE2E8;color:#8C1B38}
+
+
+/* start */
+.start{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.start-card{border:1px solid #ffffff22;border-radius:18px;padding:30px;background:#ffffff08}
+.start-card h3{color:#fff;font-size:1.4rem;margin-bottom:6px}
+.start-card .sub{color:#B9B0DC;font-size:.96rem;margin-bottom:16px}
+.cp{position:relative;background:#0D0A1F;border-radius:12px;padding:14px 56px 14px 18px;font-family:var(--mono);font-size:.82rem;line-height:1.75;color:#EDE7FF;margin-top:10px;overflow-x:auto;white-space:pre}
+.cp .c{color:#8D83B8}
+.cp button{position:absolute;top:10px;right:10px;background:#ffffff1c;border:0;border-radius:7px;padding:4px 10px;font-size:.76rem;color:#E1DAF8}
+.cp button:hover{background:#ffffff33}
+.prereq{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px}
+.prereq span{font-size:.92rem;background:#ffffff12;border-radius:99px;padding:6px 15px;color:#D8D1F2}
+.status{margin-top:40px}
+.status h3{color:#fff;font-size:1.3rem;margin-bottom:12px}
+.status ul{margin:0;padding-left:20px;color:#C9C0E6;max-width:90ch}
+.status li{margin:7px 0}
+footer{background:#0D0A1F;color:#8D83B8;padding:30px 0;font-size:.92rem}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;color:#B7ADD9;text-align:center}
+
+@media (max-width:1020px){
+  .hero-grid,.setup,.start,.status{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .steps{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}
+  .step{flex:none}
+  .step .lbl{white-space:nowrap}
+  .tools{grid-template-columns:repeat(2,1fr)}
+  .agents{grid-template-columns:repeat(2,1fr)}
+  .guards{grid-template-columns:1fr 1fr}
+  .guard-i:nth-child(3n){border-right:1px solid var(--line)}
+  .guard-i:nth-child(2n){border-right:0}
+  .guard-i:nth-child(n+7){border-bottom:1px solid var(--line)}
+  .guard-i:nth-child(n+9){border-bottom:0}
+  .why-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .why-row:last-child{grid-column:1/-1}
+  .modes{grid-template-columns:1fr}
+  .mk-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mk-grid{grid-template-columns:1fr}
+  .mode{border-left:0;border-top:1px solid var(--line)}
+}
+@media (max-width:700px){
+  .why-list{grid-template-columns:1fr}
+  .why-row:last-child{display:flex}
+  section{padding:48px 0}
+  .nav ul{display:none}
+  .panel{padding:26px 22px}
+  .panel .cols{grid-template-columns:1fr}
+  details.sk summary{grid-template-columns:28px minmax(0,1fr);}
+  details.sk .ds,details.sk .ph{display:none}
+  details.sk .more{padding-left:22px}
+  .tools,.agents,.guards,.mk-steps{grid-template-columns:1fr}
+  .guard-i{border-right:0!important;border-bottom:1px solid var(--line)!important}
+  .guard-i:last-child{border-bottom:0!important}
+  .term-body{font-size:.76rem}
+  .rail .st{font-size:.62rem}
+  .cmp th{width:110px}
+  .cmp th,.cmp td{padding:12px 14px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .caret{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">qa<b>-kit</b></a>
+    <ul id="navlinks">
+      <li><a class="lnk" href="#why">Why</a></li>
+      <li><a class="lnk" href="#flow">How it runs</a></li>
+      <li><a class="lnk" href="#monkey">Monkey testing</a></li>
+      <li><a class="lnk" href="#skills">Capabilities</a></li>
+      <li><a class="lnk" href="#tools">Connected tools</a></li>
+      <li><a class="lnk" href="#guard">Guardrails</a></li>
+      <li><a class="lnk" href="#setup">Agents and setup</a></li>
+      <li><a class="lnk" href="#start">Get started</a></li>
+    </ul>
+    <span class="tag-int">v0.9.0</span>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Requirement in.<span>Reviewed Playwright tests out.</span></h1>
+      <p class="lede">qa-kit is our toolkit for Playwright repos. It plans tests from Jira, Figma and TestRail, writes and heals them, reviews its own work, explores the running app, and commits, pushes and opens the pull request only when you tell it to.</p>
+      <dl class="facts">
+        <div><dt>18</dt><dd>skills</dd></div>
+        <div><dt>8</dt><dd>specialist agents</dd></div>
+        <div><dt>4</dt><dd>parallel pipelines</dd></div>
+        <div><dt>5</dt><dd>connected tools</dd></div>
+        <div><dt>2</dt><dd>coding agents</dd></div>
+      </dl>
+    </div>
+
+    <div class="term" aria-label="Illustrated qa-kit run">
+      <div class="term-bar"><i></i><i></i><i></i><span>illustrated run, one feature</span><button id="replay" type="button">Replay</button></div>
+      <div class="term-body" id="tbody" aria-live="off"></div>
+      <div class="rail" id="rail">
+        <div class="st">Plan</div>
+        <div class="st">Review</div>
+        <div class="st">Write</div>
+        <div class="st">Heal</div>
+        <div class="st">Check</div>
+        <div class="st">Commit</div>
+        <div class="st">PR</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY -->
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>One way of working, instead of one per repo</h2>
+      <p>Test automation work repeats the same moves on every ticket. qa-kit turns those moves into shared, reviewable procedures that every team uses the same way.</p>
+    </div>
+    <div class="why-list">
+      <div class="why-row">
+        <div class="q">Planning lives in someone's head<small>The ticket, the design and the existing coverage are read separately, and the result is rarely written down.</small></div>
+        <div class="a"><b>The plan is a Markdown file you review.</b> It merges Jira, Confluence, Figma and TestRail into scenarios with priorities and levels. It also checks the repo and TestRail, so a scenario that already has a test is not planned again. Open questions are listed, and unclear UI details are marked, never guessed.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">Conventions are caught in code review<small>Naming, weak assertions and duplicated setup come back as review comments.</small></div>
+        <div class="a"><b>Conventions are applied while writing, then checked again.</b> A self-review gate runs before any PR exists, so a human reviewer only judges design and business logic. The target is one review round.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">A broken locator is fixed once per test<small>Ten failing tests often share one root cause.</small></div>
+        <div class="a"><b>Failures are grouped by root cause and healed once.</b> The fix goes into the shared Page Object, then the whole original scope is re-run before anything is reported done.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">Automation with no brakes is risky<small>An agent that can commit, push and open PRs on its own is hard to trust.</small></div>
+        <div class="a"><b>Nothing is committed, pushed or opened unless you ask.</b> Each step needs an explicit flag, and the runner checks that in code. With <code>--commit</code> only files the pipeline produced are staged.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">"Fixed" in the ticket is not the same as fixed<small>Reproducing a defect means decoding someone else's write-up, then finding out whether a test guards it.</small></div>
+        <div class="a"><b>One defect in, a verdict out.</b> It reads the ticket as a defect, reproduces it live, replays once to confirm, and tells you whether a test already covers the flow. If none does, it offers to plan one.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">Scripted tests only find what someone expected<small>Real users click in odd orders and type odd things.</small></div>
+        <div class="a"><b>A monkey tester explores the running app on a clock.</b> It tries odd inputs and sequences, proves each finding by replaying it, removes the data it created, and turns confirmed findings into a plan for regression tests.</div>
+      </div>
+      <div class="why-row">
+        <div class="q">A red nightly run costs a morning<small>Is it a product bug, a known issue, a changed product, or a flaky test?</small></div>
+        <div class="a"><b>Failures are triaged per group, with evidence.</b> It reads the Allure report and its history, retests only what failed, cross-checks the Jira issues you give it, and advises. It drafts tickets and never files them.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow" class="bg-mist">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>From ticket to pull request in seven stages</h2>
+      <p>You can run one stage at a time, or chain them. Three of the stages wait for you: reviewing the plan, committing, and pushing or opening a PR. Pick a stage to see what it does.</p>
+    </div>
+    <div class="flow">
+      <div class="steps" id="steps" role="tablist" aria-label="Lifecycle stages"></div>
+      <div class="panel" id="panel" role="tabpanel" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MONKEY -->
+<section id="monkey">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Then let a monkey try to break it</h2>
+      <p>Scripted tests check what someone thought of. The monkey tester explores one area of the running app like a curious, slightly hostile tester, and every finding comes with proof.</p>
+    </div>
+    <ol class="mk-steps">
+      <li><b>Understand first</b><span>Before it acts on a page it reads the conventions, the plan scenarios and the existing tests, and takes one read-only look at the screen. It keeps a short card per page and reuses it while nothing has changed.</span></li>
+      <li><b>Explore on a clock</b><span>5 minutes by default, 30 at most, with an optional focus in plain words. It tries edge inputs, odd sequences and the gaps the existing tests do not script.</span></li>
+      <li><b>Prove every finding</b><span>A finding needs a named reason and evidence, then it is replayed once. It is reported as reproduced 2/2, flaky, or listed as unconfirmed and never counted as a defect.</span></li>
+      <li><b>Clean up and report</b><span>It removes only the data it created, then writes a report with the same seven sections every time, and a plan for the findings that reproduced.</span></li>
+    </ol>
+    <div class="mk-grid">
+      <div class="mk-card">
+        <h3>What counts as a finding</h3>
+        <ul>
+          <li><b>Hard evidence:</b> an uncaught script error, a failing first-party request, a blank or stuck page, a dead end.</li>
+          <li><b>Softer, labelled as advice:</b> it contradicts a plan scenario, the app disagrees with itself, an error nobody could understand, a control that does not do what its label says.</li>
+          <li><b>Severity 1 to 4:</b> crash or data loss, broken function, degraded, cosmetic.</li>
+        </ul>
+      </div>
+      <div class="mk-card fence">
+        <h3>Fenced in</h3>
+        <ul>
+          <li>Refuses a production-looking host, with no override.</li>
+          <li>Writes only under <code>qa-kit-artifacts/monkey/</code>. Never touches git, tracked files or <code>.env</code>.</li>
+          <li>Never touches billing, invitations, outbound messages, account settings or other origins.</li>
+          <li>Creates only data named with its own run prefix, at most 25 per run, and deletes one verified item at a time from its own ledger.</li>
+          <li>Anything that looks protected (NOT, SOURCE, SEED, TEMPLATE, KEEP, fixtures the tests use) is read-only, and listed as left alone.</li>
+        </ul>
+      </div>
+      <div class="mk-card">
+        <h3>What you get</h3>
+        <ul>
+          <li><code>monkey-report.md</code> with Run, Coverage, Findings, Unconfirmed, Data, Environment and Not explored.</li>
+          <li><code>findings-plan.md</code> with only the findings that reproduced 2/2, in the normal plan format.</li>
+          <li>Running <code>feature-implement</code> on that plan turns them into regression tests. That step stays a human decision.</li>
+          <li>Several areas at once with <code>feature-monkey</code>, 2 at a time by default. They share one app and one test account.</li>
+        </ul>
+      </div>
+    </div>
+<pre class="cmd mk-cmd"><span class="c"># one area, in your conversation</span>
+/qa-kit:monkey-test checkout --minutes=5 --guidance="odd quantities and coupons"
+<span class="c"># several areas, in parallel, creating no data</span>
+/qa-kit:feature-monkey checkout "order history" --read-only
+<span class="c"># confirmed findings to regression tests</span>
+/qa-kit:feature-implement qa-kit-artifacts/monkey/&lt;slug&gt;/findings-plan.md</pre>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills" class="bg-mist">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Eighteen skills, eight agents</h2>
+      <p>A skill is one procedure. An agent is a role with specific tool permissions that runs one skill at a time. Open any row for the detail and an example command.</p>
+    </div>
+    <div class="chips" id="fchips" role="group" aria-label="Filter skills"></div>
+    <div class="skill-list" id="skillList"></div>
+
+    <div class="agents">
+      <div class="agent"><h4>agent-planner</h4><p>Reads requirements and produces the plan. Read-only toward git.</p><div class="runs">runs <code>plan-tests</code></div></div>
+      <div class="agent"><h4>agent-writer</h4><p>Writes specs and Page Objects that follow the repo's conventions.</p><div class="runs">runs <code>write-tests</code></div></div>
+      <div class="agent"><h4>agent-executor</h4><p>Runs the suite, classifies failures and heals them. Has no Write tool, so a new file becomes a blocked result for a human.</p><div class="runs">runs <code>heal-tests</code> or <code>execute-tests</code></div></div>
+      <div class="agent"><h4>agent-reviewer</h4><p>Reviews, checks the tests against the plan, and applies fixes on its own branch. Never touches git.</p><div class="runs">runs <code>review-tests</code>, <code>verify-coverage</code>, <code>apply-review-fixes</code></div></div>
+      <div class="agent"><h4>agent-deliverer</h4><p>Commits what already passed review, and pushes or opens the PR only when told. Has no edit tool.</p><div class="runs">runs <code>commit-and-push</code>, <code>create-pr</code></div></div>
+      <div class="agent"><h4>agent-triager</h4><p>Works after a run, on one failed Allure report. Jira access is read-only, and it edits tests only with <code>--heal</code>.</p><div class="runs">runs <code>triage-failure</code></div></div>
+      <div class="agent"><h4>agent-defect-retester</h4><p>Starts from one Jira defect and reproduces it live. Jira access is read-only, it has no Edit tool, and it never plans or implements without being asked.</p><div class="runs">runs <code>retest-defect</code></div></div>
+      <div class="agent"><h4>agent-monkey</h4><p>Explores one area of the running app within a time budget. Writes only under <code>qa-kit-artifacts/monkey/</code>, has no Edit tool, and never uses the unsafe run-code browser tool.</p><div class="runs">runs <code>monkey-test</code></div></div>
+    </div>
+
+    <div class="modes">
+      <div class="mode-t"><h3>One feature or several</h3><p>Pick one track per feature. The plan file is the hand-off between them.</p></div>
+      <div class="mode"><b>Manual track</b><span>Run the skills one at a time in your own checkout. Most control.</span></div>
+      <div class="mode pipe"><b>Pipeline track</b><span><code>feature-plan</code>, <code>feature-implement</code> and <code>feature-deliver</code>. Several features run in parallel, up to 3 by default, each in its own worktree and branch. Implement stops after review, and <code>feature-deliver</code> commits when you are ready. <code>feature-monkey</code> explores several areas at once.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>It reads where your requirements already live</h2>
+      <p>Five connected tools, configured once in the repo. Missing optional ones degrade the plan instead of stopping it, and the plan says which sources were unavailable.</p>
+    </div>
+    <div class="tools">
+      <div class="tool"><h4>Atlassian</h4><div class="ft">Jira tickets, linked Confluence pages and subtasks. Read-only when checking known issues.</div><span class="cred oauth">Browser sign-in</span><span class="req">Needed for Jira-based planning</span></div>
+      <div class="tool"><h4>Glean</h4><div class="ft">Read-only alternative when you have no Atlassian access. Your Glean admin gives you the MCP URL.</div><span class="cred env">GLEAN_URL</span><span class="req">Plus browser sign-in. Alternative to Atlassian</span></div>
+      <div class="tool"><h4>Figma</h4><div class="ft">Reads the design to ground UI scenarios.</div><span class="cred env">FIGMA_API_KEY</span><span class="req">Only for Figma links</span></div>
+      <div class="tool"><h4>TestRail</h4><div class="ft">Cross-checks existing coverage, so planned scenarios are not duplicated, and drafts case stubs.</div><span class="cred env">TESTRAIL_URL, _USERNAME, _API_KEY</span><span class="req">Optional</span></div>
+      <div class="tool"><h4>Playwright</h4><div class="ft">Finds real locators in the live app, heals broken ones, and tells a moved element from a missing one.</div><span class="cred none">No credentials</span><span class="req">Used while writing, healing, triaging and monkey testing</span></div>
+    </div>
+    <p class="note">Credentials stay in each person's shell environment. They are never written into the kit or the repo, never put in a <code>.env</code>, and <code>init</code> reports only whether a variable is set or missing.</p>
+  </div>
+</section>
+
+<!-- GUARD -->
+<section id="guard" class="bg-mist">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Built so that you can trust it with your repo</h2>
+      <p>These are rules the kit follows every time, and where it can, rules it checks in code instead of asking the model to remember.</p>
+    </div>
+    <div class="guards">
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Read-only where it matters</h3><p>Planning and coverage checks write only to <code>qa-kit-artifacts/</code> and never touch git. Triage and defect retests never create, edit or comment on a Jira issue.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>No commit, push or PR, unless asked</h3><p><code>--commit</code>, <code>--push</code> and <code>--pr</code> are a ladder, each implying the one before. The pipeline never decides this itself.</p><div class="enf">Runner: deny rules plus post-run checks, exit code 3</div></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div><h3>Your work stays yours</h3><p>With <code>--commit</code>, only files the pipeline produced are staged, one by path, and never a file you had already changed. No <code>git add -A</code>, no <code>--no-verify</code>, no force-push, no commit on the default branch.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div><h3>Delivering says what it took</h3><p><code>feature-deliver</code> is the request to deliver, so it commits every change git shows, your hand edits included. It lists what it added beyond the pipeline's files, and a secret file stops it. Check the list before <code>--push</code>.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M17 6l3 3M14 9l2 2"/></svg></div><h3>No secrets in the repo</h3><p>Tokens and URLs live in your shell environment. Jira and Glean use browser sign-in. No model, provider or API-key settings are ever written.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg></div><h3>Setup changes are reviewed</h3><p><code>init</code> shows a plan with diffs first. Existing files change only when you accept them, one at a time. Conflicts are never written into your file, and <code>init</code> never commits.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg></div><h3>Your conventions win</h3><p><code>.qa-kit/project/conventions.md</code> overrides the kit's defaults for every skill. Updates merge the kit's new rows into it through a reviewed three-way merge and never overwrite your edits.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div><h3>Monkey runs are fenced</h3><p>No production-looking host, with no override. They write only under <code>qa-kit-artifacts/monkey/</code> and never touch git, tracked files or <code>.env</code>.</p><div class="enf">Runner: no changes outside the folder, .env unchanged, exit code 3</div></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div><h3>Only its own data</h3><p>It creates only data named with its run prefix and deletes only entries in its own ledger, one verified item at a time. Anything protected-looking is read-only and listed as left alone.</p></div>
+    </div>
+    <div class="callout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+      <p><b>Two known gaps, stated plainly.</b> On OpenCode, outside the runner, nothing in the kit blocks <code>git push</code> or <code>gh pr create</code>; the skills' own confirmation prompts are the guard there, while Claude Code's repo permissions keep both as prompts. And defect retests have no pipeline entry, so the runner cannot check them afterwards: their limits rest on the skill's rules and the agent's tool list.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="setup">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Use the coding agent you already have</h2>
+      <p>One source, two first-class agents. Models are whatever your agent is already configured with. qa-kit never writes model or provider settings.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Agent">
+      <button role="tab" id="tab-cc" aria-selected="true" data-a="cc">Claude Code</button>
+      <button role="tab" id="tab-oc" aria-selected="false" data-a="oc">OpenCode</button>
+    </div>
+    <table class="cmp" id="cmp"></table>
+    <div class="ide">
+      <span>Terminal</span><span>IntelliJ</span><span>WebStorm</span><span>VS Code</span><span>Claude desktop app</span>
+    </div>
+  </div>
+  <div class="wrap sub-block">
+    <div class="sec-head">
+      <h2>Set up a repo once, then everyone just works</h2>
+      <p>One person runs <code>init</code> per repo and opens a PR with what it wrote. Everyone else installs the kit once per machine and pulls.</p>
+    </div>
+    <div class="setup">
+      <ol class="flow-list">
+        <li><b>Run <code>/qa-kit:init</code></b><span>It detects your agents, package manager, test folder and default branch, and asks only about the rest.</span></li>
+        <li><b>Read the plan</b><span>Nothing is written yet. Every file gets a status and a diff.</span></li>
+        <li><b>Accept what you want</b><span>File by file. Anything it cannot settle automatically becomes a review copy.</span></li>
+        <li><b>Fill in your conventions</b><span>Pre-filled from the repo. Your file, and it overrides the kit's defaults.</span></li>
+        <li><b>Commit and open the PR yourself</b><span>The report lists exactly which files to stage.</span></li>
+      </ol>
+      <div>
+        <details class="dd" open>
+          <summary>What lands in your repo</summary>
+          <div class="in">
+            <p><code>AGENTS.md</code> with the standards, a one-line <code>CLAUDE.md</code> import, <code>.claude/settings.json</code> with permissions, <code>.mcp.json</code> and <code>opencode.json</code> from one server list, and <code>.qa-kit/</code> with your conventions and a manifest.</p>
+            <p>Your conventions file also gets a <em>Monkey rules</em> section: hosts to never run against, known console noise and protected data. <code>init</code> pre-fills the production hosts it can see in non-secret config.</p>
+            <p>Run-time output goes to <code>qa-kit-artifacts/</code>, which ignores itself and can never be committed.</p>
+          </div>
+        </details>
+        <details class="dd">
+          <summary>Updates are a reviewed three-way merge</summary>
+          <div class="in">
+            <p>When a new kit version arrives, <code>init</code> compares what the kit wrote last time, what it renders now, and your file. Your edits stay on top of the new content.</p>
+            <div class="sts"><span class="s g">fast-forward</span><span class="s g">merge</span><span class="s y">conflict</span><span class="s y">unknown-base</span><span class="s">kept</span><span class="s">unchanged</span></div>
+            <p style="margin-top:12px">The previous version is not stored in your repo. It is rebuilt from the git tag that wrote each file, and if that fails nothing is overwritten. Some releases, such as 0.9.0, ask you to re-run <code>init</code> so the command table in <code>AGENTS.md</code> and the new rows in your conventions file arrive as reviewed merges. A clash on the same lines becomes a review copy, never an overwrite.</p>
+          </div>
+        </details>
+        <details class="dd">
+          <summary>Repos that are not only automation</summary>
+          <div class="in">
+            <p><code>init --path=automation</code> puts the whole install in one subfolder. Developers elsewhere in the repo get no instructions file, no MCP servers and no plugin offer. People start the agent in that folder.</p>
+          </div>
+        </details>
+        <details class="dd">
+          <summary>Planning without any repo</summary>
+          <div class="in">
+            <p><code>read-ticket</code>, <code>plan-tests</code> and <code>feature-plan</code> need no repo. Register the tools once with <code>/qa-kit:init --user</code>, then run from any folder.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- START -->
+<section id="start" class="bg-ink on-dark">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Try it on your next ticket</h2>
+      <p>Install the kit once per machine. Then plan a ticket in any folder, or set up your repo with <code>init</code>. Not sure where to start? Type <code>/qa-kit:help</code> for one screen with the recommended path, every flow and skill, and examples.</p>
+    </div>
+    <div class="start">
+      <div class="start-card">
+        <h3>Claude Code</h3>
+        <p class="sub">The plugin installs from the <code>ngavish-tech</code> marketplace.</p>
+        <div class="cp"><button type="button" data-copy>Copy</button><span class="c"># once per machine</span>
+/plugin marketplace add https://github.com/ngavishtech/qa-kit
+/plugin install qa-kit@ngavish-tech</div>
+        <div class="cp"><button type="button" data-copy>Copy</button><span class="c"># once per repo, then every day</span>
+/qa-kit:help
+/qa-kit:init
+/qa-kit:plan-tests ABC-1234
+/qa-kit:feature-implement qa-kit-artifacts/ABC-1234-test-plan.md
+/qa-kit:feature-deliver
+/qa-kit:triage-failure &lt;Allure report URL&gt; --known=ABC-12
+/qa-kit:retest-defect ABC-1234
+/qa-kit:monkey-test checkout --minutes=5</div>
+      </div>
+      <div class="start-card">
+        <h3>OpenCode</h3>
+        <p class="sub">Clone once outside any project repo, then install.</p>
+        <div class="cp"><button type="button" data-copy>Copy</button><span class="c"># once per machine</span>
+git clone https://github.com/ngavishtech/qa-kit "$HOME/.qa-kit-src"
+node "$HOME/.qa-kit-src/tools/cli.mjs" install</div>
+        <div class="cp"><button type="button" data-copy>Copy</button><span class="c"># same commands, different prefix</span>
+/qa-kit-help
+/qa-kit-init
+/qa-kit-plan-tests ABC-1234
+/qa-kit-feature-implement qa-kit-artifacts/ABC-1234-test-plan.md
+/qa-kit-feature-deliver
+/qa-kit-triage-failure &lt;Allure report URL&gt; --known=ABC-12
+/qa-kit-retest-defect ABC-1234
+/qa-kit-monkey-test checkout --minutes=5</div>
+      </div>
+    </div>
+    <div class="prereq">
+      <span>Git</span><span>GitHub CLI, logged in</span><span>Node.js 22 or newer</span><span>Atlassian or Glean sign-in</span><span>Optional: GLEAN_URL, FIGMA_API_KEY, TESTRAIL_*</span>
+    </div>
+
+    <div class="status">
+      <h3>Where it stands</h3>
+      <ul>
+        <li>Version 0.9.0, for Playwright repos, on Claude Code and OpenCode.</li>
+        <li>Permission rules for OpenCode are not generated yet.</li>
+        <li>Monkey testing: traces, video and generated repro specs are not produced yet.</li>
+        <li>Defect retesting: how much of a ticket's screenshots and attachments the Jira and Glean servers return is not checked yet.</li>
+        <li>Atlassian is on the v1 endpoint for now; move to v2 before 2027-03-01.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap"><span>qa-kit 0.9.0</span><span>Plan, write, heal, review and deliver Playwright tests.</span><span class="rights">&copy; 2026 Nir Gavish. All rights reserved.</span></div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Terminal replay ---------- */
+  var script = [
+    {t:'cmd', x:'/qa-kit:feature-plan ABC-1234', s:0},
+    {t:'dim', x:'<span class="who">planner</span> reading Jira ABC-1234 and linked Confluence pages'},
+    {t:'dim', x:'<span class="who">planner</span> reading Figma design'},
+    {t:'dim', x:'<span class="who">planner</span> cross-checking TestRail and the repo\'s existing tests'},
+    {t:'ok',  x:'plan saved: qa-kit-artifacts/ABC-1234-test-plan.md'},
+    {t:'stop',x:'Stopped on purpose. Review the plan and answer its open questions.', s:1, hold:true},
+    {t:'cmd', x:'/qa-kit:feature-implement qa-kit-artifacts/ABC-1234-test-plan.md', s:2},
+    {t:'dim', x:'<span class="who">writer</span> locators confirmed in the live app, specs written, lint clean'},
+    {t:'dim', x:'<span class="who">executor</span> 2 failures share one root cause', s:3},
+    {t:'dim', x:'<span class="who">executor</span> fixed once in the Page Object, full re-run passes'},
+    {t:'dim', x:'<span class="who">reviewer</span> findings applied on this branch, lint clean', s:4},
+    {t:'ok',  x:'every planned scenario has a test'},
+    {t:'stop',x:'Nothing committed: no --commit, --push or --pr was given. Look at the tests, then run feature-deliver.', s:5, hold:true}
+  ];
+
+  var body = document.getElementById('tbody');
+  var rail = [].slice.call(document.querySelectorAll('#rail .st'));
+  var timers = [];
+
+  function setRail(i, hold){
+    rail.forEach(function(el,k){
+      el.className = 'st' + (k<i?' done':'') + (k===i?' now'+(hold?' hold':''):'');
+    });
+  }
+  function clearAll(){ timers.forEach(clearTimeout); timers=[]; body.innerHTML=''; setRail(-1); }
+  function later(fn,ms){ timers.push(setTimeout(fn,ms)); }
+
+  function addLine(item){
+    var d = document.createElement('div');
+    d.className = 'l ' + item.t;
+    body.appendChild(d);
+    while (body.children.length > 16) body.removeChild(body.firstChild);
+    if (typeof item.s === 'number') setRail(item.s, item.hold);
+    return d;
+  }
+  function renderAll(){
+    clearAll();
+    script.forEach(function(it){ var d=addLine(it); if(it.t==='cmd') d.textContent=it.x; else d.innerHTML=it.x; });
+    setRail(5,true);
+  }
+  function play(){
+    clearAll();
+    if (reduce){ renderAll(); return; }
+    var at = 250;
+    script.forEach(function(it){
+      if (it.t==='cmd'){
+        var text = it.x, n = text.length;
+        later(function(){
+          var d = addLine(it); var c = document.createElement('span'); c.className='caret';
+          var tn = document.createTextNode(''); d.appendChild(tn); d.appendChild(c);
+          var i = 0;
+          (function type(){
+            if(!d.parentNode) return;
+            i += 2; tn.nodeValue = text.slice(0,i);
+            if(i < n) timers.push(setTimeout(type,18)); else c.remove();
+          })();
+        }, at);
+        at += n*9 + 450;
+      } else {
+        later(function(){ var d=addLine(it); d.innerHTML=it.x; }, at);
+        at += it.hold ? 1700 : 850;
+      }
+    });
+  }
+  document.getElementById('replay').addEventListener('click', play);
+  play();
+
+  /* ---------- Lifecycle explorer ---------- */
+  var stages = [
+    {n:'Plan', skill:'plan-tests', also:'read-ticket, verify-coverage', agent:'agent-planner',
+     lead:'Reads the ticket, the design and the existing coverage, and writes one reviewable plan.',
+     does:['Merges Jira, Confluence, Figma, TestRail and free text for the same feature into one plan','Checks the repo\'s specs and TestRail cases, so scenarios already covered are not planned again','Marks unclear UI details as unverified instead of guessing'],
+     gets:['Scenarios: positive, negative, boundary, edge','Priority, tags and a level for each: Smoke, Sanity or Regression','Dropped duplicates listed under Existing Coverage with file and line, and partial ones that say which test they extend','TestRail case stubs and a list of open questions'],
+     guard:'Read-only. Writes only to qa-kit-artifacts/, never touches git, never writes to TestRail.',
+     cmd:'/qa-kit:feature-plan ABC-1234\n/qa-kit:feature-plan --plan ABC-1234, ABC-1235, "extra context"'},
+    {n:'Review the plan', human:true, skill:'you', agent:'a person',
+     lead:'The plan is a Markdown file. Edit it like any document and answer its open questions.',
+     does:['Approve, change or drop scenarios','Put back a scenario that was dropped as a duplicate, if you disagree','Resolve the open questions and unverified UI details','Hand only the approved plans to the next stage'],
+     gets:['A plan the team agreed on before any code exists'],
+     guard:'This stop is deliberate. A pipeline cannot pause for a question mid-run, so approval is a real gap between two commands.', hum:true,
+     cmd:'/qa-kit:feature-plan --update qa-kit-artifacts/ABC-1234-test-plan.md, "also cover the empty-cart case"'},
+    {n:'Write', skill:'write-tests', also:'discover-locator, fix-lint', agent:'agent-writer',
+     lead:'Turns the approved plan into Playwright specs that look like the rest of your repo.',
+     does:['Finds your existing page objects, factories and helpers first, and proposes only what is missing','Skips a scenario that already has a test, so running a plan twice writes nothing new','Adds a partly covered scenario inside the existing spec, reusing its setup, instead of copying it','Confirms locators in the live app, or marks them unverified, then runs lint and typecheck'],
+     gets:['UI, API or end-to-end specs','Shared Page Object methods, never one inline locator per scenario'],
+     guard:'Add --level=smoke to write only the Smoke scenarios first. A later run adds the rest on the same branch.',
+     cmd:'/qa-kit:feature-implement qa-kit-artifacts/ABC-1234-test-plan.md --level=smoke'},
+    {n:'Run and heal', skill:'heal-tests', also:'execute-tests, discover-locator', agent:'agent-executor',
+     lead:'Runs the tests, sorts the failures by cause, and fixes each cause once.',
+     does:['Classifies failures as locator, timing, state, API or assertion','Reports a broken beforeEach as one root cause, not fifty failures','Fixes shared Page Objects, then re-runs the whole original scope'],
+     gets:['Passing tests, or a clear blocked reason that asks for a human decision'],
+     guard:'--no-heal runs and classifies only, and edits nothing.',
+     cmd:'/qa-kit:feature-implement <plan> --no-heal'},
+    {n:'Review and fix', skill:'review-tests', also:'verify-coverage, apply-review-fixes', agent:'agent-reviewer',
+     lead:'Checks the branch against your standards, and against the plan, before a person ever sees it.',
+     does:['Finds naming problems, weak assertions, duplicated logic and oversized files','Maps every plan scenario to a written test: a missing one is Blocking and ends the stage blocked','Applies the fixes on its own branch, then lints again'],
+     gets:['A branch that is already reviewed and fixed','A list of planned scenarios that are missing or weak, in the run summary'],
+     guard:'On someone else\'s PR it only reports. It reviews and edits only the files this run produced, and never touches git.',
+     cmd:'/qa-kit:feature-implement <plan> --no-apply'},
+    {n:'Commit', human:true, opt:true, skill:'commit-and-push', also:'write-commit-message', agent:'agent-deliverer',
+     lead:'Happens only when you ask: with --commit, or by running feature-deliver once you have looked at the tests.',
+     does:['With --commit, stages exactly the files the pipeline produced, one by path, and never a file you had already changed','feature-deliver commits every change git shows, your hand edits included, and lists what it added beyond the pipeline\'s files','Conventional Commit with the ticket key, such as [ABC-1234] feat(checkout): ...','Without a flag, the tests stay uncommitted in your checkout, or in each plan\'s worktree'],
+     gets:['A clean commit on a feature branch, or tests you can look at first'],
+     guard:'Never git add -A, never --no-verify, never a commit on the default branch. A secret file stops delivery.', hum:true,
+     cmd:'/qa-kit:feature-implement <plan> --commit\n/qa-kit:feature-deliver'},
+    {n:'Push and PR', human:true, opt:true, skill:'create-pr', also:'commit-and-push', agent:'agent-deliverer',
+     lead:'Happens only when you ask for it. --push implies --commit, and --pr implies --push.',
+     does:['Runs a self-review gate first, and stops blocked if a Blocking finding is left','Detects the real default branch and drafts the PR title and body','Pushes and opens the PR with gh'],
+     gets:['A pull request a human reviewer can judge on design and logic alone'],
+     guard:'Needs --push or --pr. The pipeline never decides this on its own, and the runner checks it after every run.', hum:true,
+     cmd:'/qa-kit:feature-deliver --pr'}
+  ];
+
+  var stepsEl = document.getElementById('steps'), panel = document.getElementById('panel');
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function showStage(i){
+    var s = stages[i];
+    [].forEach.call(stepsEl.children,function(b,k){ b.setAttribute('aria-selected', k===i?'true':'false'); b.tabIndex = k===i?0:-1; });
+    var chips = '<span class="chip'+(s.skill==='you'?' you':'')+'">'+(s.skill==='you'?'a person decides':'skill: '+s.skill)+'</span>';
+    if(s.also) chips += '<span class="chip">also uses '+s.also+'</span>';
+    if(s.agent && s.skill!=='you') chips += '<span class="chip is-agent">agent: '+s.agent+'</span>';
+    panel.innerHTML =
+      '<h3>'+(i+1)+'. '+s.n+'</h3><div class="who">'+chips+'</div>'+
+      '<p class="lead">'+s.lead+'</p>'+
+      '<div class="cols"><div><h4>What happens</h4><ul>'+s.does.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'+
+      '<div><h4>What you get</h4><ul>'+s.gets.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div></div>'+
+      '<div class="guard'+(s.hum?' hum':'')+'">'+esc(s.guard)+'</div>'+
+      '<pre class="cmd">'+esc(s.cmd)+'</pre>';
+  }
+  stages.forEach(function(s,i){
+    var b = document.createElement('button');
+    b.type='button'; b.className='step'+(s.human?' human':''); b.setAttribute('role','tab');
+    b.innerHTML = '<span class="n">'+(i+1)+'</span><span class="lbl">'+s.n+'</span>'+(s.opt?'<span class="opt">on request</span>':'');
+    b.addEventListener('click',function(){showStage(i);});
+    b.addEventListener('keydown',function(e){
+      var k = e.key==='ArrowDown'||e.key==='ArrowRight' ? 1 : e.key==='ArrowUp'||e.key==='ArrowLeft' ? -1 : 0;
+      if(!k) return; e.preventDefault(); e.stopPropagation();
+      var j = (i+k+stages.length)%stages.length; showStage(j); stepsEl.children[j].focus();
+    });
+    stepsEl.appendChild(b);
+  });
+  showStage(0);
+
+  /* ---------- Skills ---------- */
+  var skills = [
+    {n:'read-ticket', p:'Plan', d:'Digest a Jira ticket and its linked pages.', more:'Fetches the ticket and linked Confluence pages through Atlassian, or through Glean read-only if you have no Atlassian access. Produces a summary, testable acceptance criteria, scope, open questions and any Figma or TestRail links found in the ticket. If neither server is authorized it stops and asks, instead of guessing.', ex:[["digest one ticket: summary, acceptance criteria, scope, open questions", "/qa-kit:read-ticket ABC-4021"], ["also runs on its own as the first step of plan-tests for every Jira key you give it", "/qa-kit:plan-tests ABC-4021"]], who:'used by plan-tests'},
+    {n:'plan-tests', p:'Plan', d:'Merge sources into one reviewable test plan.', more:'Combines Jira, Confluence, Figma, TestRail and plain text into a Markdown plan with scenarios, priorities, tags, levels and TestRail stubs. It checks existing coverage first: duplicates are dropped only with a row under Existing Coverage, and a partial scenario says which test it extends. Update mode merges new information into an existing plan without losing the team\'s edits.', ex:[["one ticket", "/qa-kit:plan-tests ABC-1234"], ["one feature from several sources merged into one plan", "/qa-kit:plan-tests plan one feature covering ABC-1234, its subtask ABC-1235, this Figma link: <url>, and also handle this edge case: <text>"], ["from a design alone", "/qa-kit:plan-tests review the attached Figma design for the new order filter fields"], ["with an explicit TestRail location for the coverage cross-check", "/qa-kit:plan-tests ABC-1234 testrail:3/12/104"], ["update an existing plan in place with new information", "/qa-kit:plan-tests --update qa-kit-artifacts/ABC-3702-test-plan.md with this Figma link: <url>"], ["when a UI journey is unclear it asks once before opening a live, headed session to ground it. Never automatic, and never inside feature-plan", ""]], who:'agent: agent-planner'},
+    {n:'verify-coverage', p:'Plan', d:'Is it already tested, and do the tests match the plan?', more:'Read-only, with file and line as evidence for every verdict. Plan mode marks each candidate scenario duplicate, partial or new against the repo\'s specs and TestRail cases. Implementation mode maps each plan scenario to a written test and reports missing (Blocking), weak, duplicate and extra tests. It reads an exact test index first, then confirms by reading the spec.', ex:[["which planned scenarios already exist as tests?", "/qa-kit:verify-coverage plan qa-kit-artifacts/ABC-3702-test-plan.md"], ["do the specs on this branch cover the plan?", "/qa-kit:verify-coverage implementation qa-kit-artifacts/ABC-3702-test-plan.md"], ["only one level (smoke, sanity or regression)", "/qa-kit:verify-coverage implementation qa-kit-artifacts/ABC-3702-test-plan.md level=smoke"]], who:'used by plan-tests and the Review stage'},
+    {n:'write-tests', p:'Build', d:'Write Playwright UI, API or end-to-end specs.', more:'Reads a plan, a ticket or a description. Uses the repo\'s own page objects, factories and helpers, discovered by purpose rather than assumed, and creates only what is missing. A scenario that already has a test is skipped, and a partial one is added inside the existing spec. Runs lint before handing off.', ex:[["a UI test from a plan file", "/qa-kit:write-tests generate a UI test from test-plan.txt"], ["an API test for one endpoint", "/qa-kit:write-tests add an API test for DELETE /api/orders/:id"], ["UI and API together", "/qa-kit:write-tests generate an E2E (both) test from plan.md"], ["implement a whole approved plan", "/qa-kit:write-tests implement qa-kit-artifacts/ABC-3702-test-plan.md"], ["only part of a plan, by level", "/qa-kit:write-tests implement qa-kit-artifacts/ABC-3702-test-plan.md, only the Smoke scenarios"]], who:'agent: agent-writer'},
+    {n:'discover-locator', p:'Build', d:'Find a working locator in the live app.', more:'Navigates to the target state, inspects it, and tries candidates in a fixed strength order. It reports what resolved and how strong it is. It never writes into a file itself.', ex:[["find a selector in a described state", "/qa-kit:discover-locator find a selector for the Save button in the order details panel"], ["with a page to start from", "/qa-kit:discover-locator find a selector for the Place order button, starting at <page URL>"]], who:'used by write, heal and triage'},
+    {n:'fix-lint', p:'Build', d:'Make lint, format and typecheck pass.', more:'Runs auto-fix, then resolves what remains by hand, checked against the repo\'s real npm scripts. Scoped to the files that changed when it can be.', ex:[["lint, format and typecheck the whole repo", "/qa-kit:fix-lint"], ["only the files you name", "/qa-kit:fix-lint src/tests/ui/orders/order-creation.spec.ts"]], who:'used by write, heal and review'},
+    {n:'execute-tests', p:'Prove', d:'Run tests and classify failures. Read-only.', more:'Runs the requested suite and groups failures by root cause: a gating beforeEach is reported once, and failures sharing a locator are grouped. Edits nothing unless you add --heal.', ex:[["run a suite and classify failures; edits nothing", "/qa-kit:execute-tests run the smoke suite"], ["run one spec file", "/qa-kit:execute-tests run src/tests/ui/checkout/add-to-cart.spec.ts"], ["run, then heal what failed", "/qa-kit:execute-tests run the smoke suite --heal"], ["say explicitly that nothing may change", "/qa-kit:execute-tests run the smoke suite --no-heal"]], who:'agent: agent-executor'},
+    {n:'heal-tests', p:'Prove', d:'Fix failing tests at the root cause.', more:'Heals locator, timing, state and API issues one root cause at a time, then re-runs the whole original scope. When a fix needs a new file, it hands off to write-tests instead of forcing an edit.', ex:[["run a suite and fix what fails", "/qa-kit:heal-tests fix the smoke suite"], ["heal one spec file", "/qa-kit:heal-tests heal src/tests/ui/orders/order-creation.spec.ts"], ["also reached from execute-tests with --heal, with the failure groups already attached", "/qa-kit:execute-tests run the smoke suite --heal"]], who:'agent: agent-executor'},
+    {n:'triage-failure', p:'Prove', d:'Explain a failed nightly run, group by group.', more:'Takes the failed tests of one Allure report (a URL, a report folder or an allure-results folder), retests only them plus the setup they depend on, and advises per failure group with a confidence, the reasons and the alternative it ruled out. Verdicts: product-bug, known-issue, deviation, product-gap, test-fix, flaky, environment, unverified. It reads the failure history, cross-checks Jira issues you give with --known, and drafts a ticket file per probable bug. It never creates, edits or comments on a Jira issue, and heals only test-fix groups when you add --heal.', ex:[["a report URL, with Jira issues to cross-check", "/qa-kit:triage-failure https://<pages-host>/<environment>/<run-number>/ --known=ABC-12,ABC-40"], ["a local results folder, with a JQL query for known issues", "/qa-kit:triage-failure ./allure-results --known=\"project = ABC AND resolution = Unresolved\""], ["classify from the report alone, no retest", "/qa-kit:triage-failure ./allure-results --no-retest"], ["also heal the groups that are test problems", "/qa-kit:triage-failure ./allure-results --known=ABC-12 --heal"], ["continue from an earlier result, healing chosen groups only", "/qa-kit:triage-failure --from=qa-kit-artifacts/triage/<slug>/triage.json --heal --groups=g4"], ["then deliver the healed files", "/qa-kit:feature-deliver"]], who:'agent: agent-triager'},
+    {n:'monkey-test', p:'Explore', d:'Explore one area of the running app like a monkey.', more:'A curious, slightly hostile tester that first understands each page (conventions, plan scenarios, existing tests, one read-only look at the screen), then explores within a time budget, 5 minutes by default and 30 at most, with optional free-text guidance. Every finding has a named reason, evidence and a replay result. It creates and removes only data carrying its own run prefix, refuses production-looking hosts, and writes a report, JSON and a findings plan under qa-kit-artifacts/monkey/. Options: --minutes, --guidance, --read-only, --seed, --no-cache.', ex:[["an area by name, 5 minutes", "/qa-kit:monkey-test checkout"], ["a longer run (30 minutes at most)", "/qa-kit:monkey-test checkout --minutes=10"], ["with a focus in plain words", "/qa-kit:monkey-test checkout --minutes=5 --guidance=\"odd quantities and coupon codes; leave payment alone\""], ["an area given as a route", "/qa-kit:monkey-test /orders"], ["create nothing: navigate, read and type without saving", "/qa-kit:monkey-test checkout --read-only"], ["repeatable choices, and ignore cached page cards", "/qa-kit:monkey-test checkout --seed=17 --no-cache"], ["several areas in parallel, 2 at a time by default", "/qa-kit:feature-monkey checkout \"order history\" --read-only --parallel=2"], ["shorter page units", "/qa-kit:feature-monkey checkout --minutes=10 --unit-minutes=3"], ["turn what reproduced into regression tests", "/qa-kit:feature-implement qa-kit-artifacts/monkey/<slug>/findings-plan.md"]], who:'agent: agent-monkey. Several areas: feature-monkey'},
+    {n:'retest-defect', p:'Prove', d:'Reproduce one Jira defect live, and check it is covered.', more:'Starts from a single defect instead of a requirement. It reads the ticket as a defect (steps, expected and actual, environment, attachments, comments, resolution), writes the steps it will follow with each marked stated or inferred, reproduces them live, and replays once from a clean state. Verdicts: reproduced, intermittent, not-reproduced, partial, inconclusive. A resolved defect that reproduces is a regression candidate, and a step it could not perform is never read as not-reproduced. It then checks whether a test performs the flow and asserts the correct behavior, and when none does it asks once whether to plan one. It stops at the plan review and never starts implementing. It never creates, edits or comments on a Jira issue, and refuses production-looking hosts. Unlike monkey runs, nothing checks these limits after the run: they rest on the skill\'s rules and the agent\'s tool list.', ex:[["by ticket key", "/qa-kit:retest-defect ABC-1234"], ["by ticket URL, creating no data", "/qa-kit:retest-defect https://<jira-host>/browse/ABC-1234 --read-only"], ["plan a regression test without asking when none covers the flow", "/qa-kit:retest-defect ABC-1234 --plan"], ["report only, never offer to plan", "/qa-kit:retest-defect ABC-1234 --no-plan"], ["tell it which account or environment to use", "/qa-kit:retest-defect ABC-1234 --guidance=\"use the standard test account\""]], who:'agent: agent-defect-retester'},
+    {n:'review-tests', p:'Review', d:'Review a branch or PR against your standards.', more:'Strictly read-only. Findings are grouped as Blocking, Should fix and Nit with file and line. It can also triage existing PR comments into already addressed, needs a code change, or needs a human reply.', ex:[["a pull request", "/qa-kit:review-tests review PR #123"], ["your own branch, before opening a PR", "/qa-kit:review-tests review the diff on this branch before I open a PR"], ["triage the comments already on a PR", "/qa-kit:review-tests triage the review comments on PR #123"]], who:'agent: agent-reviewer'},
+    {n:'apply-review-fixes', p:'Review', d:'Act on the review findings.', more:'Applies Blocking and Should-fix edits, lints what changed, and re-runs the affected tests to confirm. It works only on your own branch, never on someone else\'s PR.', ex:[["review and fix in one command", "/qa-kit:apply-review-fixes review PR #123 and fix what you find"], ["your own branch", "/qa-kit:apply-review-fixes review the diff on this branch before I open a PR"], ["reuse findings from a review you already ran, instead of reviewing again", "/qa-kit:apply-review-fixes"]], who:'agent: agent-reviewer'},
+    {n:'write-commit-message', p:'Deliver', d:'Draft a commit message from the real diff.', more:'Conventional Commits with the ticket key from the branch name. It only drafts. It never stages, commits or pushes.', ex:[["draft a message from the real diff; never commits", "/qa-kit:write-commit-message"]], who:'you start it. Never auto-invoked'},
+    {n:'commit-and-push', p:'Deliver', d:'Commit specific files, push only on request.', more:'Stages by path and commits with a drafted message. A confirmation comes before any push, unless the run was started with an explicit --push.', ex:[["commit with a drafted message, then ask before pushing", "/qa-kit:commit-and-push"], ["commit with your own message", "/qa-kit:commit-and-push \"fix(checkout): correct cart total rounding\""]], who:'you start it. Never auto-invoked'},
+    {n:'create-pr', p:'Deliver', d:'Self-review, then open the pull request.', more:'Runs the review and fix gate first, detects the real default branch, drafts the title and body with a self-review line, confirms, then runs gh pr create. Inside a pipeline, an unresolved Blocking finding ends the stage blocked instead of opening the PR.', ex:[["self-review gate, commit, push, open the PR; confirms before pushing and before opening", "/qa-kit:create-pr"], ["with your own commit message and PR title", "/qa-kit:create-pr \"fix(checkout): correct cart total rounding\" \"Fix cart total rounding\""], ["skip the self-review gate, only when you say so; the report notes it", "/qa-kit:create-pr open the PR as-is, skip self-review"]], who:'you start it. Never auto-invoked'},
+    {n:'init', p:'Setup', d:'Set up or update the repo layer.', more:'Writes the instructions, permissions, MCP servers and conventions your repo needs, through a plan you review and accept file by file. Ends every run with a report of what to commit and what your ignore rules swallow.', ex:[["set up or update the repo, through a plan you review", "/qa-kit:init"], ["preview the plan and write nothing", "/qa-kit:init --dry-run"], ["a repo that is not only test automation: install in one subfolder", "/qa-kit:init --path=automation"], ["choose which agents the team uses", "/qa-kit:init --agents claude,opencode"], ["name the kit repository explicitly", "/qa-kit:init --kit-url <git url>"], ["no repo: register the tool servers on your machine", "/qa-kit:init --user --servers glean_default,figma"]], who:'you start it. Never auto-invoked'},
+    {n:'help', p:'Setup', d:'See everything qa-kit can do, on one screen.', more:'One short screen with the recommended path first, the four flows with their flags, every skill in one line, and examples. Add a name for up to 15 lines on one flow or skill, read from the kit\'s own files so it cannot drift. It changes nothing and runs nothing.', ex:[["the one-screen overview", "/qa-kit:help"], ["detail on one flow", "/qa-kit:help feature-implement"], ["detail on one skill", "/qa-kit:help heal-tests"]], who:'prints only'}
+  ];
+
+  var phases = ['All','Plan','Build','Prove','Explore','Review','Deliver','Setup'];
+  var fch = document.getElementById('fchips'), list = document.getElementById('skillList'), cur='All';
+  function drawSkills(){
+    list.innerHTML = skills.filter(function(s){return cur==='All'||s.p===cur;}).map(function(s){
+      var usage = s.ex.map(function(e){ return '<span class="c"># '+esc(e[0])+'</span>'+(e[1]?'\n'+esc(e[1]):''); }).join('\n\n');
+      return '<details class="sk"><summary><span class="tw"></span><span class="nm">'+s.n+'</span><span class="ds">'+s.d+'</span><span class="ph">'+s.p+'</span></summary>'+
+        '<div class="more"><p>'+s.more+'</p><h5>Supported usage</h5><pre class="cmd">'+usage+'</pre><div class="meta"><span class="chip">'+s.who+'</span></div></div></details>';
+    }).join('');
+  }
+  phases.forEach(function(p){
+    var b = document.createElement('button'); b.type='button'; b.className='fchip'; b.textContent=p;
+    b.setAttribute('aria-pressed', p===cur?'true':'false');
+    b.addEventListener('click',function(){ cur=p; [].forEach.call(fch.children,function(x){x.setAttribute('aria-pressed', x.textContent===p?'true':'false');}); drawSkills(); });
+    fch.appendChild(b);
+  });
+  drawSkills();
+
+  /* ---------- Agent toggle ---------- */
+  var cmpData = {
+    cc:[['Install','Plugin from the <code>ngavish-tech</code> marketplace'],['Skills','<code>/qa-kit:plan-tests ...</code>'],['Pipelines','<code>/qa-kit:feature-plan ...</code>, run by Claude\'s Workflow tool'],['Repo instructions','<code>CLAUDE.md</code> imports <code>AGENTS.md</code>'],['Tool servers','<code>.mcp.json</code>'],['Commit, push and PR guard','Repo permissions keep <code>git push</code> and <code>gh pr create</code> as prompts, and the runner denies commit, push and PR creation unless the run asked for them']],
+    oc:[['Install','One clone in <code>$HOME/.qa-kit-src</code>, then <code>cli.mjs install</code>'],['Skills','<code>/qa-kit-plan-tests ...</code>'],['Pipelines','<code>/qa-kit-feature-plan ...</code>, run by the Node runner'],['Repo instructions','<code>AGENTS.md</code>'],['Tool servers','<code>opencode.json</code>, generated from the same server list'],['Commit, push and PR guard','Skill confirmation prompts, plus post-run checks when the runner is used']]
+  };
+  function drawCmp(a){
+    document.getElementById('cmp').innerHTML = cmpData[a].map(function(r){return '<tr><th scope="row">'+r[0]+'</th><td>'+r[1]+'</td></tr>';}).join('');
+    document.getElementById('tab-cc').setAttribute('aria-selected', a==='cc');
+    document.getElementById('tab-oc').setAttribute('aria-selected', a==='oc');
+  }
+  [].forEach.call(document.querySelectorAll('[data-a]'),function(b){ b.addEventListener('click',function(){drawCmp(b.dataset.a);}); });
+  drawCmp('cc');
+
+  /* ---------- Copy buttons ---------- */
+  [].forEach.call(document.querySelectorAll('[data-copy]'),function(btn){
+    btn.addEventListener('click',function(){
+      var box = btn.parentNode, txt = box.innerText.replace(/^Copy\n?/,'').split('\n').filter(function(l){return l.trim().charAt(0)!=='#';}).join('\n').trim();
+      function done(){ btn.textContent='Copied'; setTimeout(function(){btn.textContent='Copy';},1400); }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,fallback); } else fallback();
+      function fallback(){ var t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} t.remove(); done(); }
+    });
+  });
+
+  /* ---------- Scroll spy + presenter keys ---------- */
+  var ids = ['why','flow','monkey','skills','tools','guard','setup','start'];
+  var links = {}; [].forEach.call(document.querySelectorAll('#navlinks a'),function(a){ links[a.getAttribute('href').slice(1)] = a; });
+  function spy(){
+    var y = window.scrollY + 120, cur=null;
+    ids.forEach(function(id){ var el=document.getElementById(id); if(el && el.offsetTop<=y) cur=id; });
+    if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4) cur=ids[ids.length-1];
+    Object.keys(links).forEach(function(k){ links[k].classList.toggle('active', k===cur); });
+  }
+  window.addEventListener('scroll', spy, {passive:true}); spy();
+  document.addEventListener('keydown',function(e){
+    var tag = (e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='summary'||e.target.getAttribute('role')==='tab'||e.altKey||e.ctrlKey||e.metaKey) return;
+    if(e.key==='PageDown' || e.key==='n' || e.key==='N'){ e.preventDefault(); jump(1); }
+    if(e.key==='PageUp' || e.key==='p' || e.key==='P'){ e.preventDefault(); jump(-1); }
+  });
+  function jump(d){
+    var order = ['top'].concat(ids), y = window.scrollY + 90, idx=0;
+    order.forEach(function(id,i){ var el=document.getElementById(id); if(el && el.offsetTop<=y) idx=i; });
+    var t = document.getElementById(order[Math.max(0,Math.min(order.length-1, idx+d))]);
+    if(t) window.scrollTo({top: t.offsetTop - (t.id==='top'?0:60), behavior: reduce?'auto':'smooth'});
+  }
+})();
+</script>
+</body>
+</html>

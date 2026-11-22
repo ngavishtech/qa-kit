@@ -57,6 +57,9 @@ SKILLS (one step at a time, you stay in control)
   Explore         monkey-test        explore one area of the live app like a monkey: understands each page first,
                                      time-boxed, cleans up after itself; report and findings plan in qa-kit-artifacts/monkey/
                                      --minutes=N  --guidance="text"  --read-only  --seed=N  --no-cache
+  Defects         retest-defect      reproduce one Jira defect live: does it reproduce, is the flow covered by
+                                     tests; offers to plan a regression test, never files or edits Jira
+                                     --plan  --no-plan  --read-only  --guidance="text"
 
 SETUP AND HELP
   init               set up or update this repo; --path <folder> for a repo that is not only automation,
@@ -70,6 +73,7 @@ EXAMPLES
   /qa-kit:plan-tests ABC-1234                        one feature, no pipeline
   /qa-kit:heal-tests fix the smoke suite
   /qa-kit:triage-failure ./allure-results --known=ABC-40
+  /qa-kit:retest-defect ABC-1234                        is this defect real, and do we have a test for it?
   /qa-kit:monkey-test checkout --minutes=5 --guidance="odd quantities and coupons"
   /qa-kit:feature-monkey checkout "order history" --read-only
 

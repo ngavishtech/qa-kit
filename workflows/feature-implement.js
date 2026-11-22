@@ -2,10 +2,10 @@ export const meta = {
   name: 'feature-implement',
   description: 'Write, execute/heal, review, and (if authorized) deliver tests for pre-approved plans from feature-plan - one plan runs in the current checkout, several plans each get their own isolated worktree/branch, capped concurrency',
   phases: [
-    { title: 'Write', detail: 'test-writer agent per plan' },
-    { title: 'Execute', detail: 'test-executor agent per plan - runs and heals unless args.heal === false' },
-    { title: 'Review', detail: 'test-reviewer agent per plan - reviews and checks the specs against the plan (verify-coverage), fixes unless args.apply === false, no git' },
-    { title: 'Deliver', detail: 'test-deliverer agent per plan - skipped unless args.commit, args.push or args.createPr; commit, then push/PR only if authorized' },
+    { title: 'Write', detail: 'agent-writer per plan' },
+    { title: 'Execute', detail: 'agent-executor per plan - runs and heals unless args.heal === false' },
+    { title: 'Review', detail: 'agent-reviewer per plan - reviews and checks the specs against the plan (verify-coverage), fixes unless args.apply === false, no git' },
+    { title: 'Deliver', detail: 'agent-deliverer per plan - skipped unless args.commit, args.push or args.createPr; commit, then push/PR only if authorized' },
   ],
 }
 
@@ -32,14 +32,14 @@ export const meta = {
 // use, since a mid-script interactive prompt isn't possible. Implies commit.
 // args.createPr: optional, default false. Only true when the human's original request explicitly
 // asked for PRs to be opened for this run. Implies push (you can't PR an unpushed branch).
-// args.heal: optional, default true. The Execute stage heals failures (test-executor invokes
+// args.heal: optional, default true. The Execute stage heals failures (agent-executor invokes
 // heal-tests, which composes execute-tests) unless this is explicitly false, in which case it only
-// runs and classifies (test-executor invokes execute-tests alone, no edits). Default is true, not
+// runs and classifies (agent-executor invokes execute-tests alone, no edits). Default is true, not
 // false, because this pipeline's whole purpose is to hand Review/Deliver passing tests - opting out
 // is for a human who wants to see raw failures before letting anything touch the branch.
 // args.apply: optional, default true. Same shape as args.heal, one stage over: the Review stage
-// applies its own findings (test-reviewer invokes review-tests, then apply-review-fixes) unless this
-// is explicitly false, in which case it only reviews and reports (test-reviewer invokes review-tests
+// applies its own findings (agent-reviewer invokes review-tests, then apply-review-fixes) unless this
+// is explicitly false, in which case it only reviews and reports (agent-reviewer invokes review-tests
 // alone, no edits). Default is true for the same reason heal defaults true - Deliver should receive
 // a clean, already-fixed branch, not a pile of findings nobody acted on; opting out is for a human
 // who wants to see findings before anything touches the branch.
@@ -318,17 +318,17 @@ async function runStage(prev, stageName, agentType, skill, prompt, schema, label
 }
 
 function writeStage(plan) {
-  return runStage(plan, 'write', 'test-writer', 'write-tests', writePrompt(plan), WRITE_SCHEMA, `write:${plan.branch}`)
+  return runStage(plan, 'write', 'agent-writer', 'write-tests', writePrompt(plan), WRITE_SCHEMA, `write:${plan.branch}`)
 }
 
 function executeStage(written) {
   const skill = HEAL ? 'heal-tests' : 'execute-tests'
-  return runStage(written, 'execute', 'test-executor', skill, executePrompt(written), EXECUTE_SCHEMA, `execute:${written.branch}`)
+  return runStage(written, 'execute', 'agent-executor', skill, executePrompt(written), EXECUTE_SCHEMA, `execute:${written.branch}`)
 }
 
 function reviewStage(executed) {
   const skill = APPLY ? 'apply-review-fixes' : 'review-tests'
-  return runStage(executed, 'review', 'test-reviewer', skill, reviewPrompt(executed), REVIEW_SCHEMA, `review:${executed.branch}`)
+  return runStage(executed, 'review', 'agent-reviewer', skill, reviewPrompt(executed), REVIEW_SCHEMA, `review:${executed.branch}`)
 }
 
 function deliverStage(reviewed) {
@@ -337,7 +337,7 @@ function deliverStage(reviewed) {
     return reviewed
   }
   const skill = PR_AUTHORIZED ? 'create-pr' : 'commit-and-push'
-  return runStage(reviewed, 'deliver', 'test-deliverer', skill, deliverPrompt(reviewed), DELIVER_SCHEMA, `deliver:${reviewed.branch}`)
+  return runStage(reviewed, 'deliver', 'agent-deliverer', skill, deliverPrompt(reviewed), DELIVER_SCHEMA, `deliver:${reviewed.branch}`)
 }
 
 const allResults = []

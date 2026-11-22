@@ -20,7 +20,7 @@
 #   --force                skip the "a workflow run is in progress" check
 #   -h, --help             show this help
 #
-# Environment: PAGES_BRANCH (default gh-pages), WORKFLOW_FILE (the workflow checked for running runs, default vutef-run.yml), PAGES_REMOTE_URL (default: this repo's 'origin').
+# Environment: PAGES_BRANCH (default gh-pages), WORKFLOW_FILE (the workflow checked for running runs, default playwright-run.yml), PAGES_REMOTE_URL (default: this repo's 'origin').
 # Needs git and node; the in-progress check also needs the GitHub CLI (skipped with a warning if absent).
 #
 # Examples:
@@ -33,7 +33,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAGES_BRANCH="${PAGES_BRANCH:-gh-pages}"
-WORKFLOW_FILE="${WORKFLOW_FILE:-vutef-run.yml}"
+WORKFLOW_FILE="${WORKFLOW_FILE:-playwright-run.yml}"
 LEGACY_ROOT_ITEMS=(assets data export history widgets)
 
 APPLY=false

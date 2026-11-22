@@ -17,7 +17,7 @@ No, they are two installs in two places. Pick by where you work.
 | You install with | It is saved to | Chat | Cowork | Code tab | Terminal and IDE |
 |---|---|---|---|---|---|
 | **Customize > Plugins** (this guide) | your claude.ai **account** | yes | yes | yes, as a synced plugin (`qa-kit@synced`) | only in a session signed in with the same claude.ai account (Claude Code 2.1.273 or newer); then `/reload-plugins` or restart |
-| **Terminal:** `claude plugin install qa-kit@ngavish-qa --scope user` | this **machine** | no | no | yes: the Code tab reads the same machine settings as the terminal | yes |
+| **Terminal:** `claude plugin install qa-kit@ngavish-tech --scope user` | this **machine** | no | no | yes: the Code tab reads the same machine settings as the terminal | yes |
 
 - A command-line install does **not** appear under **Customize > Plugins**: Anthropic's documentation says plugins installed from the command line "stay on that machine and aren't added to your claude.ai account".
 - Terminal sync of an account plugin needs a claude.ai sign-in. It is skipped when the credential comes from `ANTHROPIC_AUTH_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN` or an `apiKeyHelper`. A terminal that uses Bedrock or another provider is not signed in that way, so expect **no** sync there (not on the documented exclusion list by name, so **unconfirmed**): install with the command instead.
@@ -34,7 +34,7 @@ The rest of this guide is the account install from **Customize > Plugins**.
 3. Click **Add**, then **Add marketplace**. (You can also look under **Discover**; the marketplace you add appears there next to the others.)
 4. Enter the repository: `ngavishtech/qa-kit` or `https://github.com/ngavishtech/qa-kit`. Confirm.
 5. The repository is public, so this normally works without any GitHub connection. If the dialog asks you to connect GitHub (for example your GitHub organization restricts apps), click **Connect GitHub**, sign in, then **Install the Claude GitHub App**. A GitHub organization owner may have to approve the Claude GitHub App first; ask them before you start.
-6. When the marketplace `ngavish-qa` has been added, open it, select the plugin **qa-kit** and click **Add**.
+6. When the marketplace `ngavish-tech` has been added, open it, select the plugin **qa-kit** and click **Add**.
 7. Check it worked (below).
 
 A marketplace you add yourself counts against a limit of 25 per account.
@@ -62,7 +62,7 @@ Organization settings, **Plugins & skills**, **Add**, **Upload a plugin** (or sy
 |---|---|---|---|
 | Skills (`help`, `plan-tests`, `read-ticket`, `write-tests`, `review-tests`, `create-pr`, ...) | loads | loads | loads |
 | Commands (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`) | loads as skills | loads | loads |
-| Agents (`test-planner`, `test-writer`, `test-executor`, `test-reviewer`, `test-deliverer`, `test-triager`, `test-monkey`) | ignored | loads | loads |
+| Agents (`agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`) | ignored | loads | loads |
 | Workflows (the parallel pipeline in `workflows/*.js`) | **unconfirmed, assume no** | **unconfirmed, assume no** | **unconfirmed**, the terminal and IDE are the tested route |
 | Paths from skills to the plugin's `patterns/` folder | **unconfirmed** | **unconfirmed** | works |
 
@@ -95,7 +95,7 @@ What the release owner does first (otherwise nothing changes): bump `version` in
 What each person does:
 
 1. Click **Customize**, then **Plugins**.
-2. Open the **ngavish-qa** marketplace and click **Check for updates**.
+2. Open the **ngavish-tech** marketplace and click **Check for updates**.
 3. Open **qa-kit** and confirm the new version is shown. A new version that syncs from the source reaches your account automatically; there is nothing to accept.
 4. Start a **new** Cowork task or a **new** Code tab session so the new version is the one loaded. In an already open Claude Code terminal session run `/reload-plugins`.
 5. In every repository set up with an older version, **one person** runs `/qa-kit:init` again (Code tab, local session, in the install folder) and commits the files the report lists. Everyone else pulls.

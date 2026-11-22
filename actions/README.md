@@ -8,12 +8,12 @@ Reusable GitHub **composite actions** so every test repo runs, reports and notif
 | `actions/allure-report/` | Generate an Allure report from `allure-results`, expose pass/fail counts as outputs, publish to GitHub Pages with history, upload artifacts. |
 | `actions/slack-notify/` | Post a run summary (status colour, environment, counts, report and run links) to a Slack channel. |
 | `templates/github/run-tests.yml` | The reference workflow a consuming repo copies. |
-| `actions/vutef-run.yml` | Standalone copy-paste workflow (no composite actions): the full VUTEF run inline. Replace the `<REPLACE ...>` / `<ADD ...>` markers; the required repo files, secrets and variables are listed in its header. Not wired into `init`. |
-| `actions/allure-archive/` | Docs and scripts for the per-run Allure archive on a `gh-pages` data branch that `vutef-run.yml` uses: layout, retention, cleanup, how to apply it to a new repo. |
+| `actions/playwright-run.yml` | Standalone copy-paste workflow (no composite actions): the full Playwright run inline. Replace the `<REPLACE ...>` / `<ADD ...>` markers; the required repo files, secrets and variables are listed in its header. Not wired into `init`. |
+| `actions/allure-archive/` | Docs and scripts for the per-run Allure archive on a `gh-pages` data branch that `playwright-run.yml` uses: layout, retention, cleanup, how to apply it to a new repo. |
 
 Use all three through the template for a complete run, or any one on its own (for example only `slack-notify` from a different pipeline).
 
-This repo has two workflows of its own in `.github/workflows/`: `secret_scan.yml` (the org secret scan) and `ci.yml` (runs `node --test`). Neither runs the actions here. A reusable *workflow* would have to live in `.github/workflows/`, so none is shipped; the template is the reference for chaining the actions.
+This repo has workflow of its own in `.github/workflows/`: `ci.yml` (runs `node --test`). Doesn't run the actions here. A reusable *workflow* would have to live in `.github/workflows/`, so none is shipped; the template is the reference for chaining the actions.
 
 ## One-time setup (admin)
 

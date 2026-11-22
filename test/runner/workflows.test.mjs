@@ -52,13 +52,13 @@ function fakeAdapter({ override = () => undefined, delay = 0 } = {}) {
 
 const run = (name, args, adapter) => runWorkflow({ name, args: { agentPrefix: 'qa-kit-', ...args }, adapter, log: () => {} })
 
-test('feature-plan plans each feature with the prefixed test-planner', async () => {
+test('feature-plan plans each feature with the prefixed agent-planner', async () => {
   const adapter = fakeAdapter()
   const report = await run('feature-plan', { features: [{ jiraKeys: ['ABC-1'] }, { descriptions: ['Add export'] }] }, adapter)
   assert.equal(report.length, 2)
   assert.deepEqual(report.map(r => r.task), ['ABC-1', 'Add export'])
   assert.ok(report.every(r => r.blocked === false && r.planPath.endsWith('-test-plan.md')))
-  assert.ok(adapter.calls.every(c => c.agentType === 'qa-kit-test-planner'))
+  assert.ok(adapter.calls.every(c => c.agentType === 'qa-kit-agent-planner'))
   assert.match(adapter.calls[0].prompt, /Jira story ABC-1/)
 })
 
@@ -94,7 +94,7 @@ test('a single plan runs headed in the current checkout and, with no delivery fl
   const adapter = fakeAdapter()
   const plans = [{ task: 'ABC-1', planPath: 'qa-kit-artifacts/ABC-1-test-plan.md', testType: 'ui' }]
   const [entry] = await run('feature-implement', { plans }, adapter)
-  assert.deepEqual(adapter.calls.map(c => c.agentType), ['qa-kit-test-writer', 'qa-kit-test-executor', 'qa-kit-test-reviewer'])
+  assert.deepEqual(adapter.calls.map(c => c.agentType), ['qa-kit-agent-writer', 'qa-kit-agent-executor', 'qa-kit-agent-reviewer'])
   assert.match(adapter.calls[0].prompt, /work directly in the current checkout/)
   assert.doesNotMatch(adapter.calls[0].prompt, /git worktree add/)
   assert.match(adapter.calls[1].prompt, /headed is fine/)
@@ -107,11 +107,11 @@ test('a single plan runs headed in the current checkout and, with no delivery fl
   assert.deepEqual(entry.history.map(h => h.stage), ['write', 'execute', 'review'])
 })
 
-test('--commit adds the test-deliverer Deliver stage: commit only, honouring the baseline', async () => {
+test('--commit adds the agent-deliverer Deliver stage: commit only, honouring the baseline', async () => {
   const adapter = fakeAdapter()
   const plans = [{ task: 'ABC-1', planPath: 'qa-kit-artifacts/ABC-1-test-plan.md', testType: 'ui' }]
   const [entry] = await run('feature-implement', { plans, commit: true }, adapter)
-  assert.deepEqual(adapter.calls.map(c => c.agentType), ['qa-kit-test-writer', 'qa-kit-test-executor', 'qa-kit-test-reviewer', 'qa-kit-test-deliverer'])
+  assert.deepEqual(adapter.calls.map(c => c.agentType), ['qa-kit-agent-writer', 'qa-kit-agent-executor', 'qa-kit-agent-reviewer', 'qa-kit-agent-deliverer'])
   assert.match(adapter.calls[3].prompt, /invoke commit-and-push/)
   assert.match(adapter.calls[3].prompt, /NOT pre-authorized/)
   assert.doesNotMatch(adapter.calls[3].prompt, /invoke create-pr/)
@@ -126,7 +126,7 @@ test('--push alone implies the commit and pre-authorizes the push', async () => 
   const plans = [{ task: 'ABC-1', planPath: 'qa-kit-artifacts/ABC-1-test-plan.md', testType: 'ui' }]
   await run('feature-implement', { plans, push: true }, adapter)
   const deliver = adapter.calls.find(c => c.label.startsWith('deliver:'))
-  assert.equal(deliver.agentType, 'qa-kit-test-deliverer')
+  assert.equal(deliver.agentType, 'qa-kit-agent-deliverer')
   assert.match(deliver.prompt, /invoke commit-and-push/)
   assert.match(deliver.prompt, /push is pre-authorized/)
 })
@@ -153,7 +153,7 @@ test('several plans each get an isolated worktree and run headless', async () =>
   ]
   const report = await run('feature-implement', { plans, createPr: true, worktreeDir: '../wt' }, adapter)
   assert.deepEqual(report.map(r => r.branch), ['feature/0-abc-1', 'feature/1-abc-2'])
-  const writes = adapter.calls.filter(c => c.agentType === 'qa-kit-test-writer')
+  const writes = adapter.calls.filter(c => c.agentType === 'qa-kit-agent-writer')
   assert.equal(writes.length, 2)
   assert.match(writes[0].prompt, /git worktree add \.\.\/wt\/0-abc-1 -b feature\/0-abc-1 origin\/HEAD/)
   assert.ok(adapter.calls.filter(c => c.label.startsWith('execute:')).every(c => /HEADLESS=true/.test(c.prompt)))
@@ -255,7 +255,7 @@ test('an unknown level is rejected before any agent runs', async () => {
   assert.equal(adapter.calls.length, 0)
 })
 
-test('feature-deliver reviews with the test-reviewer then delivers with the test-deliverer', async () => {
+test('feature-deliver reviews with the agent-reviewer then delivers with the agent-deliverer', async () => {
   const adapter = fakeAdapter()
   const targets = [
     { task: 'ABC-1', branch: 'feature/0-abc-1', worktreePath: '/work/a' },
@@ -264,8 +264,8 @@ test('feature-deliver reviews with the test-reviewer then delivers with the test
   const report = await run('feature-deliver', { targets, push: true }, adapter)
   assert.equal(report.length, 2)
   assert.deepEqual(report.map(r => r.stage), ['deliver', 'deliver'])
-  assert.ok(adapter.calls.filter(c => c.label.startsWith('review:')).every(c => c.agentType === 'qa-kit-test-reviewer'))
-  assert.ok(adapter.calls.filter(c => c.label.startsWith('deliver:')).every(c => c.agentType === 'qa-kit-test-deliverer'))
+  assert.ok(adapter.calls.filter(c => c.label.startsWith('review:')).every(c => c.agentType === 'qa-kit-agent-reviewer'))
+  assert.ok(adapter.calls.filter(c => c.label.startsWith('deliver:')).every(c => c.agentType === 'qa-kit-agent-deliverer'))
   assert.match(adapter.calls[0].prompt, /HEADLESS=true/)
   assert.ok(adapter.calls.filter(c => c.label.startsWith('deliver:')).every(c => /invoke commit-and-push/.test(c.prompt) && /push is pre-authorized/.test(c.prompt)))
 })

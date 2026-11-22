@@ -57,9 +57,31 @@ describe('references resolve', () => {
     const used = new Set()
     for (const [file, body] of text) {
       if (!file.startsWith('workflows/')) continue
-      for (const [, name] of body.matchAll(/'(test-[a-z]+)'/g)) used.add(name)
+      for (const [, name] of body.matchAll(/'(agent-[a-z-]+)'/g)) used.add(name)
     }
     for (const name of used) assert.ok(agents.includes(name), `workflow uses unknown agent ${name}`)
+  })
+})
+
+describe('naming grammar (see "Naming" in .claude/CLAUDE.md)', () => {
+  const agentNames = names('agents')
+
+  it('agents are agent-<role noun>; no skill or command borrows the prefix', () => {
+    for (const a of agentNames) assert.match(a, /^agent-[a-z]+(-[a-z]+)*$/, a)
+    for (const n of [...skills, ...commands]) assert.ok(!n.startsWith('agent-'), `${n} must not start with agent-`)
+  })
+
+  it('no source names an agent or skill by a retired name (the CHANGELOG keeps its history)', () => {
+    const retired = new RegExp(
+      '\\btest-(' + ['planner', 'writer', 'executor', 'reviewer', 'deliverer', 'triager', 'monkey'].join('|') + ')\\b',
+    )
+    const scanned = [...text.entries()]
+    for (const extra of ['README.md', '.claude/CLAUDE.md']) scanned.push([extra, readFileSync(join(ROOT, extra), 'utf8')])
+    for (const dir of ['runner', 'tools']) {
+      for (const f of walk(join(ROOT, dir))) scanned.push([relative(ROOT, f).replaceAll('\\', '/'), readFileSync(f, 'utf8')])
+    }
+    const hits = scanned.filter(([, body]) => retired.test(body)).map(([file]) => file)
+    assert.deepEqual(hits, [])
   })
 })
 
@@ -110,14 +132,14 @@ describe('read-only skills stay read-only', () => {
   const READ_ONLY_JIRA = /^mcp__(atlassian__(get|search|lookup)\*|glean_default__(search|read_document))$/
   const VERDICTS = ['product-bug', 'known-issue', 'deviation', 'product-gap', 'test-fix', 'flaky', 'environment', 'unverified']
 
-  it('triage-failure and test-triager reach Jira and Glean read-only, wherever the tools are listed', () => {
-    const agentFields = splitFrontmatter(text.get('agents/test-triager.md')).fields
+  it('triage-failure and agent-triager reach Jira and Glean read-only, wherever the tools are listed', () => {
+    const agentFields = splitFrontmatter(text.get('agents/agent-triager.md')).fields
     const agentTools = agentFields.get('tools').split(',').map((x) => x.trim())
     for (const granted of [tools('triage-failure'), agentTools]) {
       for (const tool of granted.filter((x) => /^mcp__(atlassian|glean_default)__/.test(x))) assert.match(tool, READ_ONLY_JIRA, tool)
     }
     assert.ok(!agentTools.includes('mcp__playwright__browser_run_code_unsafe'))
-    assert.equal(agentFields.get('name'), 'test-triager')
+    assert.equal(agentFields.get('name'), 'agent-triager')
   })
 
   it('triage-failure states its limits and names every verdict it can give', () => {
@@ -131,14 +153,47 @@ describe('read-only skills stay read-only', () => {
     assert.doesNotMatch(body, /test-issue/)
   })
 
-  it('test-triager passes the skill flags through and never adds --heal itself', () => {
-    const body = text.get('agents/test-triager.md')
+  it('agent-triager passes the skill flags through and never adds --heal itself', () => {
+    const body = text.get('agents/agent-triager.md')
     assert.match(body, /skills\/triage-failure\/SKILL\.md/)
     assert.match(body, /never add `--heal` yourself/)
   })
 
+  it('retest-defect and agent-defect-retester reach Jira and Glean read-only and have no edit or unsafe tool', () => {
+    const agentFields = splitFrontmatter(text.get('agents/agent-defect-retester.md')).fields
+    const agentTools = agentFields.get('tools').split(',').map((x) => x.trim())
+    for (const granted of [tools('retest-defect'), agentTools]) {
+      for (const tool of granted.filter((x) => /^mcp__(atlassian|glean_default)__/.test(x))) assert.match(tool, READ_ONLY_JIRA, tool)
+      assert.ok(!granted.includes('Edit'), 'no Edit tool')
+      assert.ok(!granted.includes('mcp__playwright__browser_run_code_unsafe'))
+      assert.ok(!granted.some((x) => /^mcp__playwright__browser_run_code/.test(x)))
+    }
+    assert.equal(agentFields.get('name'), 'agent-defect-retester')
+  })
+
+  it('retest-defect states its limits and names every verdict it can give', () => {
+    const body = text.get('skills/retest-defect/SKILL.md')
+    assert.match(body, /never creates, edits, transitions or comments on a Jira issue/i)
+    assert.match(body, /never changes git state/i)
+    assert.match(body, /never runs against production/i)
+    assert.match(body, /monkey-test`'s "Data safety"/)
+    assert.match(body, /asks none/i)
+    assert.match(body, /Never run `feature-implement` from here/)
+    for (const verdict of ['reproduced', 'intermittent', 'not-reproduced', 'partial', 'inconclusive']) {
+      assert.match(body, new RegExp('\\*\\*' + verdict + '\\*\\*'), verdict)
+    }
+    assert.match(body, /never `not-reproduced`/i)
+  })
+
+  it('agent-defect-retester passes the skill flags through, never adds --plan and never asks', () => {
+    const body = text.get('agents/agent-defect-retester.md')
+    assert.match(body, /skills\/retest-defect\/SKILL\.md/)
+    assert.match(body, /never add `--plan` yourself/)
+    assert.match(body, /offerPlan: true/)
+  })
+
   it('the Review stage and the planner both name verify-coverage', () => {
-    assert.match(text.get('agents/test-reviewer.md'), /verify-coverage/)
+    assert.match(text.get('agents/agent-reviewer.md'), /verify-coverage/)
     assert.match(text.get('skills/plan-tests/SKILL.md'), /verify-coverage/)
     assert.match(text.get('workflows/feature-implement.js'), /verify-coverage/)
   })
@@ -159,9 +214,9 @@ describe('delivery and coverage rules stay written down', () => {
     assert.match(text.get('patterns/test-plan-format.md'), /Extends <file> "<test title>": <what this scenario adds>/)
   })
 
-  it('create-pr and test-deliverer agree: no edit tool means a blocked gate, not a silent fix', () => {
+  it('create-pr and agent-deliverer agree: no edit tool means a blocked gate, not a silent fix', () => {
     assert.match(text.get('skills/create-pr/SKILL.md'), /When the caller has no edit tool/)
-    const deliverer = text.get('agents/test-deliverer.md')
+    const deliverer = text.get('agents/agent-deliverer.md')
     assert.ok(!splitFrontmatter(deliverer).fields.get('tools').split(',').map((x) => x.trim()).includes('Edit'))
     assert.match(deliverer, /return a blocked result/)
     assert.match(deliverer, /skippedPaths/)
