@@ -2,7 +2,7 @@
 
 This file is for working **on** the qa-kit repository. It is not shipped to users. (`templates/AGENTS.md.template` is a different file: it is what `/qa-kit:init` writes into a *consuming* repo.)
 
-**What this repo is**: the public kit `qa-kit` for Playwright test repos: plan tests from Jira/Figma/TestRail, write and heal Playwright tests, review, commit and open PRs, one feature at a time (skills) or several in parallel (pipelines). It ships as a **Claude Code plugin** (marketplace `ngavish-qa`) and as an **OpenCode install** rendered from the same files. The same repo also hosts reusable GitHub composite actions and templates. **The repo is public and must stay employer- and product-agnostic**: no company, product, tenant, host, ticket or person names, no personal e-mail addresses. Everything environment-specific comes from the consuming repo's files or each person's environment variables (`GLEAN_URL`, `TESTRAIL_*`, `FIGMA_API_KEY`). The only project-specific identity that stays is the repo's own (`ngavish-qa`, `ngavishtech/qa-kit`).
+**What this repo is**: the public kit `qa-kit` for Playwright test repos: plan tests from Jira/Figma/TestRail, write and heal Playwright tests, review, commit and open PRs, one feature at a time (skills) or several in parallel (pipelines). It ships as a **Claude Code plugin** (marketplace `ngavish-tech`) and as an **OpenCode install** rendered from the same files. The same repo also hosts reusable GitHub composite actions and templates. **The repo is public and must stay employer- and product-agnostic**: no company, product, tenant, host, ticket or person names, no personal e-mail addresses. Everything environment-specific comes from the consuming repo's files or each person's environment variables (`GLEAN_URL`, `TESTRAIL_*`, `FIGMA_API_KEY`). The only project-specific identity that stays is the repo's own (`ngavish-tech`, `ngavishtech/qa-kit`).
 
 Last updated: 2026-11-22. Version in `.claude-plugin/plugin.json` is the source of truth for the kit version.
 
@@ -10,7 +10,7 @@ Last updated: 2026-11-22. Version in `.claude-plugin/plugin.json` is the source 
 
 | Path | What it is | In the ZIP? |
 |---|---|---|
-| `.claude-plugin/plugin.json`, `marketplace.json` | plugin manifest, marketplace listing (`ngavish-qa` -> `qa-kit`, source `./`) | yes |
+| `.claude-plugin/plugin.json`, `marketplace.json` | plugin manifest, marketplace listing (`ngavish-tech` -> `qa-kit`, source `./`) | yes |
 | `skills/<name>/SKILL.md` | the procedures (18 skills, including `init` and `help`) | yes |
 | `agents/` | `agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`: role + tool grants, each invokes one skill | yes |
 | `commands/` | Claude Code `/qa-kit:feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`: argument parsing, then call a workflow | yes |

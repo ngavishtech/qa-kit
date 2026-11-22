@@ -2,7 +2,7 @@
 
 The org's QA automation toolkit for Playwright test repos: plan tests from Jira/Figma/TestRail, write and heal Playwright tests, review, commit and open PRs - one feature at a time with skills, or several in parallel with pipelines. It runs on **Claude Code** and **OpenCode**, from the terminal or inside IntelliJ, WebStorm and VS Code.
 
-**Public and product-agnostic.** The kit carries no company, product or tenant names. Everything specific to your setup (your Glean URL, TestRail instance, secrets) comes from your own environment variables or your own repo files. The marketplace is `ngavish-qa`, served from this repository.
+**Public and product-agnostic.** The kit carries no company, product or tenant names. Everything specific to your setup (your Glean URL, TestRail instance, secrets) comes from your own environment variables or your own repo files. The marketplace is `ngavish-tech`, served from this repository.
 
 Version: **0.9.0** (the top entry of `CHANGELOG.md`; `.claude-plugin/plugin.json` is the source of truth). Status: not yet piloted - read "Pilot checklist" before rolling out.
 
@@ -38,7 +38,7 @@ requirement --> PLAN --> (you review) --> WRITE --> RUN + HEAL --> REVIEW + FIX 
 | Step | Who, how often | What happens | Details |
 |---|---|---|---|
 | 1. Prerequisites | each person, once | git, `gh`, Node 22+, personal credentials in your shell environment | [Prerequisites](#prerequisites-one-time-per-person) |
-| 2. Install the kit | each person, once per machine | Claude Code: a plugin from the `ngavish-qa` marketplace. OpenCode: a clone in `$HOME/.qa-kit-src` plus `install` | [Install the kit](#install-the-kit-once-per-machine) |
+| 2. Install the kit | each person, once per machine | Claude Code: a plugin from the `ngavish-tech` marketplace. OpenCode: a clone in `$HOME/.qa-kit-src` plus `install` | [Install the kit](#install-the-kit-once-per-machine) |
 | 3. Set up the repo | **one person, once per repo** | `/qa-kit:init` writes the repo layer (instructions, permissions, MCP servers, conventions); you review it as a plan, then commit it in a PR | [Set up a repo](#set-up-a-repo-init-once-per-repo) |
 | 3b. Join a repo | everyone else | install the kit (step 2), pull the repo, start the agent in the right folder. No `init` | [Joining](#joining-a-repo-that-is-already-set-up) |
 | 4. Work | everyone, every day | plan -> review -> implement -> deliver, manual or as pipelines | [Day to day](#using-qa-kit-day-to-day) |
@@ -59,7 +59,7 @@ requirement --> PLAN --> (you review) --> WRITE --> RUN + HEAL --> REVIEW + FIX 
 
 | | Claude Code | OpenCode |
 |---|---|---|
-| Install | plugin from the `ngavish-qa` marketplace | `node "$HOME/.qa-kit-src/tools/cli.mjs" install` from a checkout kept outside any project repo (user-level, once per machine) |
+| Install | plugin from the `ngavish-tech` marketplace | `node "$HOME/.qa-kit-src/tools/cli.mjs" install` from a checkout kept outside any project repo (user-level, once per machine) |
 | Skills | `/qa-kit:plan-tests ...` | `/qa-kit-plan-tests ...` |
 | Pipelines (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`) | `/qa-kit:feature-plan ...` (Claude's Workflow tool) | `/qa-kit-feature-plan ...` (runs the Node runner) |
 | Repo instructions | `CLAUDE.md` -> imports `AGENTS.md` | `AGENTS.md` |
@@ -100,29 +100,29 @@ Everyone does this once per machine, including people who join a repo that is al
 
 ```
 /plugin marketplace add https://github.com/ngavishtech/qa-kit
-/plugin install qa-kit@ngavish-qa
+/plugin install qa-kit@ngavish-tech
 ```
 
 The same from a shell, without opening a session (`--scope user` makes it available in every project on the machine):
 
 ```bash
 claude plugin marketplace add https://github.com/ngavishtech/qa-kit
-claude plugin install qa-kit@ngavish-qa --scope user
+claude plugin install qa-kit@ngavish-tech --scope user
 ```
 
-**You do not clone anything for Claude Code.** `qa-kit@ngavish-qa` means "plugin `qa-kit` from the marketplace named `ngavish-qa`", and that name is defined in this repository's `.claude-plugin/marketplace.json`. The first command is what tells Claude Code *where* the repository is: it clones it by itself into `~/.claude/plugins/marketplaces/ngavish-qa` using the git credentials already on your machine (SSH key or credential helper). The second command installs the plugin from that copy. One-command form, Claude Code 2.1.292 or newer: `claude plugin install qa-kit --marketplace ngavishtech/qa-kit --scope user`. Restart Claude Code or run `/reload-plugins` afterwards. (OpenCode is different: it needs the clone below.)
+**You do not clone anything for Claude Code.** `qa-kit@ngavish-tech` means "plugin `qa-kit` from the marketplace named `ngavish-tech`", and that name is defined in this repository's `.claude-plugin/marketplace.json`. The first command is what tells Claude Code *where* the repository is: it clones it by itself into `~/.claude/plugins/marketplaces/ngavish-tech` using the git credentials already on your machine (SSH key or credential helper). The second command installs the plugin from that copy. One-command form, Claude Code 2.1.292 or newer: `claude plugin install qa-kit --marketplace ngavishtech/qa-kit --scope user`. Restart Claude Code or run `/reload-plugins` afterwards. (OpenCode is different: it needs the clone below.)
 
-`claude plugin install qa-kit@ngavish-qa --scope user` refreshes the marketplace first, so it installs the latest version published on the repository's default branch. To be explicit, run `claude plugin marketplace update ngavish-qa` before it. Installing before a release is merged gives you the older version; update afterwards (see "Updating to a new version").
+`claude plugin install qa-kit@ngavish-tech --scope user` refreshes the marketplace first, so it installs the latest version published on the repository's default branch. To be explicit, run `claude plugin marketplace update ngavish-tech` before it. Installing before a release is merged gives you the older version; update afterwards (see "Updating to a new version").
 
 ### Claude desktop app (Windows and Mac, clicks only)
 
 1. Open the app, sign in, click **Customize** in the sidebar, then **Plugins**.
 2. Click **Add**, then **Add marketplace**, and enter `ngavishtech/qa-kit` (or `https://github.com/ngavishtech/qa-kit`).
 3. If the dialog cannot read the repository (for example your GitHub organization restricts apps): click **Connect GitHub**, then **Install the Claude GitHub App**; a GitHub owner may have to approve the app first.
-4. Open the marketplace `ngavish-qa`, select **qa-kit** and click **Add**.
+4. Open the marketplace `ngavish-tech`, select **qa-kit** and click **Add**.
 5. Check: type `/` in a conversation (the skills show with the plugin name), or open a **Code** tab session on your computer and type `/qa-kit:`.
 
-This install belongs to your **account**: Chat, Cowork and the Code tab get it, and a terminal Claude Code only when it is signed in with the same claude.ai account (not with Bedrock or an API key), after `/reload-plugins`. A command-line install (`claude plugin install qa-kit@ngavish-qa --scope user`) is the opposite: it reaches the terminal, IDEs and the Code tab but is not shown under **Customize > Plugins**. If you work in the terminal, use the command; add this account install only for Chat or Cowork. No access to the repo from the app: **Add > Upload plugin** with the ZIP instead. Details, the ZIP route and what each part of the app supports: `docs/CLAUDE-DESKTOP.md`.
+This install belongs to your **account**: Chat, Cowork and the Code tab get it, and a terminal Claude Code only when it is signed in with the same claude.ai account (not with Bedrock or an API key), after `/reload-plugins`. A command-line install (`claude plugin install qa-kit@ngavish-tech --scope user`) is the opposite: it reaches the terminal, IDEs and the Code tab but is not shown under **Customize > Plugins**. If you work in the terminal, use the command; add this account install only for Chat or Cowork. No access to the repo from the app: **Add > Upload plugin** with the ZIP instead. Details, the ZIP route and what each part of the app supports: `docs/CLAUDE-DESKTOP.md`.
 
 ### Org-wide (admins)
 
@@ -130,8 +130,8 @@ Put the same two keys in Claude Code **managed settings**:
 
 ```json
 {
-  "extraKnownMarketplaces": { "ngavish-qa": { "source": { "source": "git", "url": "<git url of this repo>" } } },
-  "enabledPlugins": { "qa-kit@ngavish-qa": true }
+  "extraKnownMarketplaces": { "ngavish-tech": { "source": { "source": "git", "url": "<git url of this repo>" } } },
+  "enabledPlugins": { "qa-kit@ngavish-tech": true }
 }
 ```
 
@@ -161,12 +161,12 @@ Restart OpenCode afterwards. Use the same checkout for `status`, `uninstall` and
 | | Claude Code | OpenCode |
 |---|---|---|
 | Restart | restart Claude Code, or `/reload-plugins` in a running session | restart OpenCode |
-| Version | `claude plugin list` shows `qa-kit@ngavish-qa` with the version of the top entry of `CHANGELOG.md`, scope `user`, enabled | `node "$HOME/.qa-kit-src/tools/cli.mjs" status` |
+| Version | `claude plugin list` shows `qa-kit@ngavish-tech` with the version of the top entry of `CHANGELOG.md`, scope `user`, enabled | `node "$HOME/.qa-kit-src/tools/cli.mjs" status` |
 | Commands | typing `/qa-kit:` lists the commands and skills; `/qa-kit:help` explains them | typing `/qa-kit-` lists them; `/qa-kit-help` explains them |
 
 ### Uninstall
 
-Claude Code: `claude plugin uninstall qa-kit@ngavish-qa` (and `claude plugin marketplace remove ngavish-qa` if you also want the marketplace gone). OpenCode: `node "$HOME/.qa-kit-src/tools/cli.mjs" uninstall`. Neither touches any repo; the files `init` wrote stay until you delete them (the list is under "Set up a repo").
+Claude Code: `claude plugin uninstall qa-kit@ngavish-tech` (and `claude plugin marketplace remove ngavish-tech` if you also want the marketplace gone). OpenCode: `node "$HOME/.qa-kit-src/tools/cli.mjs" uninstall`. Neither touches any repo; the files `init` wrote stay until you delete them (the list is under "Set up a repo").
 
 ## Set up a repo (`init`, once per repo)
 
@@ -392,13 +392,13 @@ A release is picked up only when `version` in `.claude-plugin/plugin.json` chang
 Claude Code, in a terminal:
 
 ```bash
-claude plugin marketplace update ngavish-qa
-claude plugin update qa-kit@ngavish-qa
+claude plugin marketplace update ngavish-tech
+claude plugin update qa-kit@ngavish-tech
 ```
 
-then restart Claude Code, or run `/reload-plugins` in a running session; `claude plugin list` shows the new version. Inside a session instead: `/plugin marketplace update ngavish-qa`, then `/plugin`, tab **Installed**, `qa-kit`, **Update now** (or tab **Marketplaces**, `ngavish-qa`, **Update marketplace**), then `/reload-plugins`. "Already at the latest version" means the marketplace listing was not refreshed yet (run the first command) or no new version was published. Marketplaces other than Anthropic's do not auto-update by default: switch it on under `/plugin`, tab **Marketplaces**, `ngavish-qa`, **Enable auto-update**; the update then arrives in the background and `/reload-plugins` applies it.
+then restart Claude Code, or run `/reload-plugins` in a running session; `claude plugin list` shows the new version. Inside a session instead: `/plugin marketplace update ngavish-tech`, then `/plugin`, tab **Installed**, `qa-kit`, **Update now** (or tab **Marketplaces**, `ngavish-tech`, **Update marketplace**), then `/reload-plugins`. "Already at the latest version" means the marketplace listing was not refreshed yet (run the first command) or no new version was published. Marketplaces other than Anthropic's do not auto-update by default: switch it on under `/plugin`, tab **Marketplaces**, `ngavish-tech`, **Enable auto-update**; the update then arrives in the background and `/reload-plugins` applies it.
 
-Claude desktop app, with clicks: **Customize > Plugins**, open the `ngavish-qa` marketplace, **Check for updates** (or **Sync automatically**), then start a new Cowork task or Code tab session. A ZIP install is updated by uploading the new ZIP again (**Add > Upload plugin**). Details: `docs/CLAUDE-DESKTOP.md`.
+Claude desktop app, with clicks: **Customize > Plugins**, open the `ngavish-tech` marketplace, **Check for updates** (or **Sync automatically**), then start a new Cowork task or Code tab session. A ZIP install is updated by uploading the new ZIP again (**Add > Upload plugin**). Details: `docs/CLAUDE-DESKTOP.md`.
 
 OpenCode, three commands on separate lines (never joined with `&&`):
 
@@ -518,7 +518,7 @@ The result is `./qa-kit-artifacts/ABC-1234-test-plan.md`. Review and edit it lik
 | Symptom | Cause and fix |
 |---|---|
 | Typing `/qa-kit:` (or `/qa-kit-`) shows nothing | The kit is not installed on this machine, or the agent was not restarted. Install it, then restart or `/reload-plugins`. Check with `claude plugin list` or `cli.mjs status`. A repo cannot install the kit for you (see "Joining a repo"). |
-| Update says "Already at the latest version" | The marketplace listing was not refreshed: run `claude plugin marketplace update ngavish-qa` first, or no new `version` was published. |
+| Update says "Already at the latest version" | The marketplace listing was not refreshed: run `claude plugin marketplace update ngavish-tech` first, or no new `version` was published. |
 | OpenCode shows the old version after `git pull` | Run `install` again (separate line, not joined with `&&`), then restart OpenCode. `status` compares installed against the checkout. |
 | `init` reports "base for X could not be rebuilt from tag T" | Layer 3 was used (see "How the previous version is rebuilt"). Check access and that the tag exists: `git ls-remote --tags <KIT_GIT_URL> T`. Nothing was overwritten; resolve the review copy in `qa-kit-artifacts/merge/`, or fix access and run `init` again. |
 | `init` asks to run the renderer from a tag | Rendering the tag with the installed kit did not reproduce your files: the renderer, the templates or the variables differ from when they were written. Running the tag's own renderer only helps if the renderer changed. Check that the URL shown is the kit repository, then say yes to try it, or no to use the first-time merge for those files. |
@@ -627,7 +627,7 @@ None of these could be confirmed from documentation or from the build machine (O
 14. **First consumer** - run `init` in an existing Playwright repo that already has its own `CLAUDE.md`, settings and `.claude/project/*` files: its existing `CLAUDE.md` and settings take the `unknown-base` path and its `.claude/project/*` files the `move` path; confirm the review copies, the new `.qa-kit/project/` content and the list of old files left to delete are right.
 15. **No guard on OpenCode outside the runner** - confirm what OpenCode does with `git push` and `gh pr create` in an interactive session (its default policy allows everything) and whether it honours `disable-model-invocation` on `init`, `commit-and-push`, `create-pr` and `write-commit-message`; decide on permission rules after this check.
 16. **Subfolder install (`--path`)** - on OpenCode: start it in `<folder>` and in the repo root of a mixed repo; confirm `<folder>/opencode.json` and `<folder>/AGENTS.md` load only from the folder, that a Developer-owned root `AGENTS.md` is not hidden by `<folder>/AGENTS.md` (OpenCode reads the nearest one; if it is hidden, pull the root file in through `opencode.json` `instructions`), and that the root session sees none of it. Claude Code was checked: `.mcp.json`, `.claude/settings.json` and `CLAUDE.md` load from the folder you start in, ancestors' `CLAUDE.md` load too, a root session loads `<folder>/CLAUDE.md` only after touching a file in it. Also run one parallel `/qa-kit:feature-implement` from the subfolder and confirm the worktrees land outside the repo and the work happens in `<worktree>/<folder>`.
-17. **Teammate without the kit** - clone a repo already set up by `init` on a machine with no qa-kit: confirm what Claude Code does after the trust dialog (does it fetch the `ngavish-qa` marketplace by itself, does `/reload-plugins` then load `qa-kit`, what does the `/plugin` **Errors** tab say), that `claude plugin install qa-kit@ngavish-qa --scope user` makes `/qa-kit:` appear, and that OpenCode shows no `/qa-kit-` commands until `install`. Also run both update paths ("Updating to a new version") once against a real new version.
+17. **Teammate without the kit** - clone a repo already set up by `init` on a machine with no qa-kit: confirm what Claude Code does after the trust dialog (does it fetch the `ngavish-tech` marketplace by itself, does `/reload-plugins` then load `qa-kit`, what does the `/plugin` **Errors** tab say), that `claude plugin install qa-kit@ngavish-tech --scope user` makes `/qa-kit:` appear, and that OpenCode shows no `/qa-kit-` commands until `install`. Also run both update paths ("Updating to a new version") once against a real new version.
 
 **Merge base rebuilt from the tag (0.4.0)**
 
