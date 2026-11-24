@@ -20,7 +20,12 @@ const DELIVERY_ALLOWED = [
   'Bash(git pull --ff-only*)',
 ]
 
-export function toolRules({ commit, push, pr }) {
+// The change flows (feature-select, feature-diff) only read: none of the delivery commands is pre-approved, and a fetch only when the run
+// was started with --fetch. Everything that changes git state is denied outright.
+const READ_ONLY_DENIED = ['Bash(git add*)', 'Bash(git commit*)', 'Bash(git checkout*)', 'Bash(git switch*)', 'Bash(git worktree*)', 'Bash(git pull*)', 'Bash(git push*)', 'Bash(git stash*)', 'Bash(git reset*)', 'Bash(git clean*)', 'Bash(git restore*)', 'Bash(git branch -d*)', 'Bash(git branch -D*)', 'Bash(git branch -m*)', 'Bash(git branch -M*)', 'Bash(git branch -c*)', 'Bash(git branch -C*)', 'Bash(git branch -f*)', 'Bash(git branch --delete*)', 'Bash(git branch --move*)', 'Bash(git branch --copy*)', 'Bash(git branch --force*)', 'Bash(git branch --set-upstream*)', 'Bash(git tag*)', 'Bash(git merge*)', 'Bash(git rebase*)', 'Bash(gh pr create*)', 'Bash(gh api*)']
+
+export function toolRules({ commit, push, pr }, { strict = false, allowFetch = false } = {}) {
+  if (strict) return { allow: allowFetch ? ['Bash(git fetch origin *)'] : [], deny: [...ALWAYS_DENIED, ...READ_ONLY_DENIED, ...(allowFetch ? [] : ['Bash(git fetch*)'])] }
   return {
     allow: [...DELIVERY_ALLOWED, ...(commit ? ['Bash(git commit *)'] : []), ...(push ? ['Bash(git push*)'] : []), ...(pr ? ['Bash(gh pr create*)'] : [])],
     deny: [...ALWAYS_DENIED, ...(commit ? [] : ['Bash(git commit*)']), ...(push ? [] : ['Bash(git push*)']), ...(pr ? [] : ['Bash(gh pr create*)'])],
@@ -57,8 +62,8 @@ function buildArgs({ agentType, schema, model, rules }) {
   ]
 }
 
-export function createAdapter({ model, cwd, policy, timeoutMs = DEFAULT_TIMEOUT_MS, log = () => {}, exec = runProcess, resolve = resolveExecutable }) {
-  const rules = toolRules(policy)
+export function createAdapter({ model, cwd, policy, readOnly, timeoutMs = DEFAULT_TIMEOUT_MS, log = () => {}, exec = runProcess, resolve = resolveExecutable }) {
+  const rules = toolRules(policy, readOnly ?? {})
   return {
     agentPrefix,
     preflight() {

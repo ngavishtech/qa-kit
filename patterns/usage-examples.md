@@ -303,6 +303,94 @@ Answering yes runs `plan-tests` and stops at the plan review: because the defect
 
 Not reproduced does not mean fixed: an open defect that does not reproduce reads "maybe fixed, or the environment or data differs", and a step the run could not perform (the screen changed) is `inconclusive`, never `not-reproduced`. It refuses production-looking hosts, creates only data named `rt-<runid>-<n>` and removes it, and a defect that needs data it did not create ends `inconclusive` rather than touching it.
 
+### AB. What do my changes affect - which tests to run, and what is not covered yet?
+
+Read-only, from the code that changed (your checkout, a branch, pull requests or the last few days), not from a ticket: that is what `feature-plan` is for. Nothing is committed, written or run; the output goes to `qa-kit-artifacts/changes/`, each as a readable `.md` for you and a `.json` for a script. The agent records what changed and which tests it thinks are affected; a tested script decides how much to run, and when it is unsure the answer is the full suite.
+
+**1. Your checkout against the default branch (also the CI pull request case)**
+```
+/qa-kit:feature-select
+```
+Your local state is what is analysed, as it is: committed, staged, unstaged and new files. It is the version that will be pushed.
+```
+Selection: narrowed (medium)   3 of 84 spec files   projects: chromium
+Why:     3 of 84 spec files (4%) for 2 changed file(s)
+Run:     npx playwright test --project=chromium tests/orders/export.spec.ts tests/orders/list.spec.ts tests/billing/invoice.spec.ts
+Notes:   mapping and inference disagree about src/orders/format.ts
+Files:   qa-kit-artifacts/changes/selection.md  selection.json  selection.args
+```
+Two other answers you will see:
+```
+Selection: none   no scope identified
+Why:     no changed files: no scope identified, nothing to run
+Run:     nothing
+
+Selection: full   the full suite (no narrowing)
+Why:     global change: package.json
+Run:     the full suite (no narrowing)
+Doubt:   global-change
+```
+`none` happens only when git confirms that nothing changed, or only documentation did. `full` is the answer for every doubt: a dependency, config, migration or locale change, shared application code (layout, router, auth), a change no test was found for, a low-confidence change, a shallow clone that cannot be diffed, or a selection of more than 60% of the specs. `selection.md` lists every changed file with its kind, what the mapping and the inference found, and why.
+
+**2. Narrow only when both sources agree**
+```
+/qa-kit:feature-select --min-confidence=high
+```
+The default narrows when at least one source found tests (`medium`). With `--min-confidence=high` a change found by only one source runs the full suite: the right choice for a CI job before the team has filled in `.qa-kit/project/change-mapping.md`.
+
+**3. Against another branch, local or remote**
+```
+/qa-kit:feature-select --base=origin/release-5
+/qa-kit:feature-select --base=release-5 --head=feature/export --fetch
+```
+A remote branch that is not available locally ends `blocked` ("fetch it, or pass --fetch"); `--fetch` runs only `git fetch origin <branch>` for it. `--head` analyses that committed ref instead of your working state. A shallow clone (the CI default) is blocked, not guessed: check out with `fetch-depth: 0`.
+
+**4. One or more pull requests, or a range**
+```
+/qa-kit:feature-select 123, 130
+/qa-kit:feature-select origin/main..feature/export
+```
+
+**5. The last few days**
+```
+/qa-kit:feature-diff --since=7
+```
+The commits of the last 7 days on this branch: each affected area is marked covered, partial or none, one plan is written per gap (`qa-kit-artifacts/<slug>-test-plan.md`), and the execution scope is written as in example 1. It stops at plan review: read the plans, then run the command it prints (`/qa-kit:feature-implement <plans>`). `qa-kit-artifacts/changes/handoff.md` lists the same gaps, plans and next command for you, and `handoff.json` for a script. If coverage could not be checked (the test index failed) the run is `blocked` and says so: that is not "no gaps". A gap whose planner failed is counted in `planFailures` and has a Plan entry saying why.
+
+**6. A separate application repo (GitHub only)**
+```
+/qa-kit:feature-select --repo=org/app 456 --plan
+```
+Pull request 456 of `org/app` is read through `gh`; the tests are the ones in this repo. `--plan` also plans the coverage gaps. A pull request with more files than GitHub will list, or one it refuses to diff, ends `blocked`: it never narrows on part of the change.
+
+**6b. A product that spans several repos**
+```
+/qa-kit:feature-select org/orders#456, org/billing#12, org/web#7
+/qa-kit:feature-diff --repo=org/orders --repo=org/billing --since=7
+```
+The pull requests (or the merged pull requests of the last 7 days) of every repo are one change set: each changed file keeps the repo it came from, a ticket key found in any of them applies to all, and a feature changed in two services is one coverage group. A bare `456` is refused when there are several `--repo`: it has to say which repo it belongs to (`org/orders#456`). If any repo cannot be read, the whole run is `blocked` with that repo named, and a consumer runs the full suite: it never answers from the repos it could read. In `change-mapping.md` write an app path as `org/orders:src/orders/**` to match only in that repo.
+
+**7. The affected tests, once, as a baseline**
+```
+/qa-kit:feature-diff --since=3 --run-affected
+```
+Runs the narrowed selection once through `execute-tests` (never healing), after the selection was re-checked by code, and reports `passed N, failed M`. A `full` or `none` selection is not run here. A failing affected test, or a run that could not start, ends the run with exit code 2.
+
+**8. One step at a time, in this conversation**
+```
+/qa-kit:analyze-changes --since=7 --coverage
+/qa-kit:select-tests --since=7 --no-smoke --threshold=40
+```
+
+**9. In CI (not wired yet, see the TODO in `workflows-reference.md` section 19)**
+```
+node <kit>/runner/qa-kit.mjs feature-select --agent claude --base=origin/main || echo "run the full suite"
+npx playwright test $(cat qa-kit-artifacts/changes/selection.args)
+```
+Read `mode` in `selection.json` first: `none` means skip, `full` means the whole suite (the args line is empty), `narrowed` means pass the args line. A non-zero exit, a blocked entry or a missing `selection.json` also means the whole suite. A push-triggered build passes `--base=<the sha before the push>`. A later job can read `handoff.json` (only written when coverage ran) and start `feature-implement` on its `plans`, passing `--commit`, `--push` or `--pr` itself.
+
+How it decides: the agent records every changed file, what kind of change it is, and which existing tests it infers it affects. Separately, the script matches each file against `.qa-kit/project/change-mapping.md` (application paths per feature; optional) and compares the two answers: they agree (`high`), only one found tests (`medium`), they disagree or nothing was found (`low`). Global changes, shared code and anything it cannot place are `full` by path rules the agent cannot override. The mapping file is optional; the report lists the disagreements and gaps so you can improve it.
+
 ### R. Setting up qa-kit in a repo that is not only test automation
 ```
 /qa-kit:init --path=automation

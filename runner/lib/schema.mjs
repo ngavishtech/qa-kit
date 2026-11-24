@@ -2,6 +2,7 @@ const TYPE_CHECKS = {
   object: value => typeof value === 'object' && value !== null && !Array.isArray(value),
   array: Array.isArray,
   string: value => typeof value === 'string',
+  number: value => typeof value === 'number' && Number.isFinite(value),
   boolean: value => typeof value === 'boolean',
 }
 

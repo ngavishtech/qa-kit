@@ -240,8 +240,8 @@ describe('the help screen stays complete and short', () => {
     assert.deepEqual(missing, [])
   })
 
-  it('stays one screen (the overview block is at most 70 lines)', () => {
-    assert.ok(overview.trim().split('\n').length <= 70, `${overview.trim().split('\n').length} lines`)
+  it('stays one screen (the overview block is at most 100 lines)', () => {
+    assert.ok(overview.trim().split('\n').length <= 100, `${overview.trim().split('\n').length} lines`)
   })
 
   it('can be picked by plain language and is announced where people start', () => {

@@ -41,8 +41,13 @@
       "Bash(git worktree list*)",
       "Bash(git remote show origin*)",
       "Bash(git symbolic-ref refs/remotes/origin/HEAD*)",
+      "Bash(git symbolic-ref --short refs/remotes/origin/HEAD*)",
+      "Bash(git rev-list*)",
+      "Bash(git merge-base*)",
+      "Bash(node *select-gate.mjs*)",
       "Bash(gh pr diff*)",
       "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
       "Bash(gh repo view*)",
       "Bash(gh auth status)"
     ]

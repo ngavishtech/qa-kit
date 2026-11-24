@@ -35,7 +35,7 @@ Search the whole string for these and **remove each from the string** before Ste
 - `--read-only` -> `args.readOnly: true`
 - `--no-cache` -> `args.noCache: true`
 
-Omit every `args` key whose flag was not given (the workflow has its own defaults: 5 minutes, 5-minute units, 2 areas at a time).
+A value flag given twice (for example `--parallel=2 --parallel=3`) is an error: stop and say so, never keep one silently. Omit every `args` key whose flag was not given (the workflow has its own defaults: 5 minutes, 5-minute units, 2 areas at a time).
 
 ### Step 2: Areas
 

@@ -38,6 +38,7 @@ Parse flags out of `$ARGUMENTS` (order doesn't matter, plain-text NLP, not stric
 - `--worktree-dir=<dir>` present -> `args.worktreeDir` (default `../worktrees`, relative to the git root)
 - `--install="<command>"` present -> `args.installCommand` (dependency install run inside a new worktree; default is auto-detected from the lockfile)
 - `--agent-prefix=<p>` present -> `args.agentPrefix` (default `qa-kit:`; `--agent-prefix=` for none; only needed if a run reports "unknown agent type")
+A value flag given twice (for example `--parallel=2 --parallel=3`) is an error: stop and say so, never keep one silently.
 - None of these present -> omit them entirely (nothing committed, default concurrency, healing on, applying on, every level)
 
 **Continuing earlier work**: when this conversation already holds a `feature-implement` report entry for the same plan (matched by `planPath`, else `task`), pass that entry's `ownedFiles` as the plan's `priorOwned` (add it to the plan object you hand over). A run without a delivery flag leaves its files uncommitted, so without `priorOwned` the next run would take them for the user's own changes. With no earlier entry, omit it.
