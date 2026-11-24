@@ -350,7 +350,7 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
       <li><a class="lnk" href="#setup">Agents and setup</a></li>
       <li><a class="lnk" href="#start">Get started</a></li>
     </ul>
-    <span class="tag-int">v0.9.0</span>
+    <span class="tag-int">v0.10.0</span>
   </div>
 </header>
 
@@ -361,11 +361,11 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
   <div class="wrap hero-grid">
     <div>
       <h1>Requirement in.<span>Reviewed Playwright tests out.</span></h1>
-      <p class="lede">qa-kit is our toolkit for Playwright repos. It plans tests from Jira, Figma and TestRail, writes and heals them, reviews its own work, explores the running app, and commits, pushes and opens the pull request only when you tell it to.</p>
+      <p class="lede">qa-kit is our toolkit for Playwright repos. It plans tests from Jira, Figma and TestRail, writes and heals them, reviews its own work, explores the running app, works out which tests a code change needs, and commits, pushes and opens the pull request only when you tell it to.</p>
       <dl class="facts">
-        <div><dt>18</dt><dd>skills</dd></div>
-        <div><dt>8</dt><dd>specialist agents</dd></div>
-        <div><dt>4</dt><dd>parallel pipelines</dd></div>
+        <div><dt>20</dt><dd>skills</dd></div>
+        <div><dt>9</dt><dd>specialist agents</dd></div>
+        <div><dt>6</dt><dd>parallel pipelines</dd></div>
         <div><dt>5</dt><dd>connected tools</dd></div>
         <div><dt>2</dt><dd>coding agents</dd></div>
       </dl>
@@ -496,7 +496,7 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
 <section id="skills" class="bg-mist">
   <div class="wrap">
     <div class="sec-head">
-      <h2>Eighteen skills, eight agents</h2>
+      <h2>Twenty skills, nine agents</h2>
       <p>A skill is one procedure. An agent is a role with specific tool permissions that runs one skill at a time. Open any row for the detail and an example command.</p>
     </div>
     <div class="chips" id="fchips" role="group" aria-label="Filter skills"></div>
@@ -511,12 +511,13 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
       <div class="agent"><h4>agent-triager</h4><p>Works after a run, on one failed Allure report. Jira access is read-only, and it edits tests only with <code>--heal</code>.</p><div class="runs">runs <code>triage-failure</code></div></div>
       <div class="agent"><h4>agent-defect-retester</h4><p>Starts from one Jira defect and reproduces it live. Jira access is read-only, it has no Edit tool, and it never plans or implements without being asked.</p><div class="runs">runs <code>retest-defect</code></div></div>
       <div class="agent"><h4>agent-monkey</h4><p>Explores one area of the running app within a time budget. Writes only under <code>qa-kit-artifacts/monkey/</code>, has no Edit tool, and never uses the unsafe run-code browser tool.</p><div class="runs">runs <code>monkey-test</code></div></div>
+      <div class="agent"><h4>agent-change-analyst</h4><p>Starts from the code that changed. Records what changed and which tests it thinks are affected, and runs the selection script that decides. It has no Edit tool, no browser tool, and reads git and <code>gh</code> read-only.</p><div class="runs">runs <code>analyze-changes</code>, <code>select-tests</code></div></div>
     </div>
 
     <div class="modes">
       <div class="mode-t"><h3>One feature or several</h3><p>Pick one track per feature. The plan file is the hand-off between them.</p></div>
       <div class="mode"><b>Manual track</b><span>Run the skills one at a time in your own checkout. Most control.</span></div>
-      <div class="mode pipe"><b>Pipeline track</b><span><code>feature-plan</code>, <code>feature-implement</code> and <code>feature-deliver</code>. Several features run in parallel, up to 3 by default, each in its own worktree and branch. Implement stops after review, and <code>feature-deliver</code> commits when you are ready. <code>feature-monkey</code> explores several areas at once.</span></div>
+      <div class="mode pipe"><b>Pipeline track</b><span><code>feature-plan</code>, <code>feature-implement</code> and <code>feature-deliver</code>. Several features run in parallel, up to 3 by default, each in its own worktree and branch. Implement stops after review, and <code>feature-deliver</code> commits when you are ready. <code>feature-monkey</code> explores several areas at once. <code>feature-select</code> and <code>feature-diff</code> start from the code that changed instead of a requirement, read-only: the tests to run, and the coverage gaps to plan.</span></div>
     </div>
   </div>
 </section>
@@ -556,6 +557,7 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
       <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg></div><h3>Your conventions win</h3><p><code>.qa-kit/project/conventions.md</code> overrides the kit's defaults for every skill. Updates merge the kit's new rows into it through a reviewed three-way merge and never overwrite your edits.</p></div>
       <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div><h3>Monkey runs are fenced</h3><p>No production-looking host, with no override. They write only under <code>qa-kit-artifacts/monkey/</code> and never touch git, tracked files or <code>.env</code>.</p><div class="enf">Runner: no changes outside the folder, .env unchanged, exit code 3</div></div>
       <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div><h3>Only its own data</h3><p>It creates only data named with its run prefix and deletes only entries in its own ledger, one verified item at a time. Anything protected-looking is read-only and listed as left alone.</p></div>
+      <div class="guard-i"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg></div><h3>Change analysis never narrows below the evidence</h3><p>The agent records facts and a tested script decides. When unsure, or when a lockfile, config or shared code changed, the answer is the full suite. Nothing changed means run nothing.</p><div class="enf">Runner: selection re-checked by code, nothing outside the folder changed, exit code 3</div></div>
     </div>
     <div class="callout">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
@@ -649,7 +651,8 @@ footer .rights{flex-basis:100%;padding-top:12px;border-top:1px solid #ffffff1a;c
 /qa-kit:feature-deliver
 /qa-kit:triage-failure &lt;Allure report URL&gt; --known=ABC-12
 /qa-kit:retest-defect ABC-1234
-/qa-kit:monkey-test checkout --minutes=5</div>
+/qa-kit:monkey-test checkout --minutes=5
+/qa-kit:feature-select --base=origin/main</div>
       </div>
       <div class="start-card">
         <h3>OpenCode</h3>
@@ -665,7 +668,8 @@ node "$HOME/.qa-kit-src/tools/cli.mjs" install</div>
 /qa-kit-feature-deliver
 /qa-kit-triage-failure &lt;Allure report URL&gt; --known=ABC-12
 /qa-kit-retest-defect ABC-1234
-/qa-kit-monkey-test checkout --minutes=5</div>
+/qa-kit-monkey-test checkout --minutes=5
+/qa-kit-feature-select --base=origin/main</div>
       </div>
     </div>
     <div class="prereq">
@@ -675,10 +679,11 @@ node "$HOME/.qa-kit-src/tools/cli.mjs" install</div>
     <div class="status">
       <h3>Where it stands</h3>
       <ul>
-        <li>Version 0.9.0, for Playwright repos, on Claude Code and OpenCode.</li>
+        <li>Version 0.10.0, for Playwright repos, on Claude Code and OpenCode.</li>
         <li>Permission rules for OpenCode are not generated yet.</li>
         <li>Monkey testing: traces, video and generated repro specs are not produced yet.</li>
         <li>Defect retesting: how much of a ticket's screenshots and attachments the Jira and Glean servers return is not checked yet.</li>
+        <li>Change analysis: the CI wiring is not built yet, and the quality of its inference half has not been checked on real repositories.</li>
         <li>Atlassian is on the v1 endpoint for now; move to v2 before 2027-03-01.</li>
       </ul>
     </div>
@@ -688,7 +693,7 @@ node "$HOME/.qa-kit-src/tools/cli.mjs" install</div>
 </main>
 
 <footer>
-  <div class="wrap"><span>qa-kit 0.9.0</span><span>Plan, write, heal, review and deliver Playwright tests.</span><span class="rights">&copy; 2026 Nir Gavish. All rights reserved.</span></div>
+  <div class="wrap"><span>qa-kit 0.10.0</span><span>Plan, write, heal, review and deliver Playwright tests.</span><span class="rights">&copy; 2026 Nir Gavish. All rights reserved.</span></div>
 </footer>
 
 <script>
@@ -853,16 +858,18 @@ node "$HOME/.qa-kit-src/tools/cli.mjs" install</div>
     {n:'triage-failure', p:'Prove', d:'Explain a failed nightly run, group by group.', more:'Takes the failed tests of one Allure report (a URL, a report folder or an allure-results folder), retests only them plus the setup they depend on, and advises per failure group with a confidence, the reasons and the alternative it ruled out. Verdicts: product-bug, known-issue, deviation, product-gap, test-fix, flaky, environment, unverified. It reads the failure history, cross-checks Jira issues you give with --known, and drafts a ticket file per probable bug. It never creates, edits or comments on a Jira issue, and heals only test-fix groups when you add --heal.', ex:[["a report URL, with Jira issues to cross-check", "/qa-kit:triage-failure https://<pages-host>/<environment>/<run-number>/ --known=ABC-12,ABC-40"], ["a local results folder, with a JQL query for known issues", "/qa-kit:triage-failure ./allure-results --known=\"project = ABC AND resolution = Unresolved\""], ["classify from the report alone, no retest", "/qa-kit:triage-failure ./allure-results --no-retest"], ["also heal the groups that are test problems", "/qa-kit:triage-failure ./allure-results --known=ABC-12 --heal"], ["continue from an earlier result, healing chosen groups only", "/qa-kit:triage-failure --from=qa-kit-artifacts/triage/<slug>/triage.json --heal --groups=g4"], ["then deliver the healed files", "/qa-kit:feature-deliver"]], who:'agent: agent-triager'},
     {n:'monkey-test', p:'Explore', d:'Explore one area of the running app like a monkey.', more:'A curious, slightly hostile tester that first understands each page (conventions, plan scenarios, existing tests, one read-only look at the screen), then explores within a time budget, 5 minutes by default and 30 at most, with optional free-text guidance. Every finding has a named reason, evidence and a replay result. It creates and removes only data carrying its own run prefix, refuses production-looking hosts, and writes a report, JSON and a findings plan under qa-kit-artifacts/monkey/. Options: --minutes, --guidance, --read-only, --seed, --no-cache.', ex:[["an area by name, 5 minutes", "/qa-kit:monkey-test checkout"], ["a longer run (30 minutes at most)", "/qa-kit:monkey-test checkout --minutes=10"], ["with a focus in plain words", "/qa-kit:monkey-test checkout --minutes=5 --guidance=\"odd quantities and coupon codes; leave payment alone\""], ["an area given as a route", "/qa-kit:monkey-test /orders"], ["create nothing: navigate, read and type without saving", "/qa-kit:monkey-test checkout --read-only"], ["repeatable choices, and ignore cached page cards", "/qa-kit:monkey-test checkout --seed=17 --no-cache"], ["several areas in parallel, 2 at a time by default", "/qa-kit:feature-monkey checkout \"order history\" --read-only --parallel=2"], ["shorter page units", "/qa-kit:feature-monkey checkout --minutes=10 --unit-minutes=3"], ["turn what reproduced into regression tests", "/qa-kit:feature-implement qa-kit-artifacts/monkey/<slug>/findings-plan.md"]], who:'agent: agent-monkey. Several areas: feature-monkey'},
     {n:'retest-defect', p:'Prove', d:'Reproduce one Jira defect live, and check it is covered.', more:'Starts from a single defect instead of a requirement. It reads the ticket as a defect (steps, expected and actual, environment, attachments, comments, resolution), writes the steps it will follow with each marked stated or inferred, reproduces them live, and replays once from a clean state. Verdicts: reproduced, intermittent, not-reproduced, partial, inconclusive. A resolved defect that reproduces is a regression candidate, and a step it could not perform is never read as not-reproduced. It then checks whether a test performs the flow and asserts the correct behavior, and when none does it asks once whether to plan one. It stops at the plan review and never starts implementing. It never creates, edits or comments on a Jira issue, and refuses production-looking hosts. Unlike monkey runs, nothing checks these limits after the run: they rest on the skill\'s rules and the agent\'s tool list.', ex:[["by ticket key", "/qa-kit:retest-defect ABC-1234"], ["by ticket URL, creating no data", "/qa-kit:retest-defect https://<jira-host>/browse/ABC-1234 --read-only"], ["plan a regression test without asking when none covers the flow", "/qa-kit:retest-defect ABC-1234 --plan"], ["report only, never offer to plan", "/qa-kit:retest-defect ABC-1234 --no-plan"], ["tell it which account or environment to use", "/qa-kit:retest-defect ABC-1234 --guidance=\"use the standard test account\""]], who:'agent: agent-defect-retester'},
+    {n:'analyze-changes', p:'Changes', d:'What do my changes affect, and is it covered?', more:'Starts from the code that changed instead of a requirement: your checkout (uncommitted work included) against the default branch, another branch, pull requests, or the last N days, optionally pull requests of separate GitHub app repos treated as one change set. It records facts only: every changed file, what kind of change it is, which existing tests it infers are affected and why, and with --coverage which affected areas have no test that would notice a regression. It never reads the change-mapping file and never decides how much to run. Read-only: it writes only under qa-kit-artifacts/changes/, never changes git state, and treats diffs and pull request text as data. A change set it cannot read in full is blocked, never narrowed.', ex:[["your checkout against the default branch", "/qa-kit:analyze-changes"], ["the last 7 days, with coverage verdicts and gaps", "/qa-kit:analyze-changes --since=7 --coverage"], ["a pull request of a separate GitHub app repo", "/qa-kit:analyze-changes --repo=org/app 456"], ["against a remote branch, fetching it if needed", "/qa-kit:analyze-changes --base=origin/release-5 --fetch"]], who:'agent: agent-change-analyst'},
+    {n:'select-tests', p:'Changes', d:'The narrowest safe test run for a change.', more:'Turns the analysis into the spec files and projects to run, with a reason and a confidence per file. A tested script decides, not the model: it crosses the repo\'s optional change-mapping file with the analysis and answers the full suite whenever the evidence is thin (a global change such as a lockfile or config, shared code, a low-confidence change, an unreadable test index, a selection above the threshold). It answers none only when nothing changed or only documentation did. Writes selection.md for people, selection.json and a one-line selection.args for CI, and never runs the tests. Options: --no-smoke, --threshold, --min-confidence=high.', ex:[["which tests does my checkout need?", "/qa-kit:select-tests"], ["narrow only when mapping and analysis agree", "/qa-kit:select-tests --min-confidence=high"], ["the whole pipeline with plans for the gaps", "/qa-kit:feature-select --plan"], ["gaps planned, affected tests run once, never healed", "/qa-kit:feature-diff --since=7 --run-affected"]], who:'agent: agent-change-analyst. Pipelines: feature-select, feature-diff'},
     {n:'review-tests', p:'Review', d:'Review a branch or PR against your standards.', more:'Strictly read-only. Findings are grouped as Blocking, Should fix and Nit with file and line. It can also triage existing PR comments into already addressed, needs a code change, or needs a human reply.', ex:[["a pull request", "/qa-kit:review-tests review PR #123"], ["your own branch, before opening a PR", "/qa-kit:review-tests review the diff on this branch before I open a PR"], ["triage the comments already on a PR", "/qa-kit:review-tests triage the review comments on PR #123"]], who:'agent: agent-reviewer'},
     {n:'apply-review-fixes', p:'Review', d:'Act on the review findings.', more:'Applies Blocking and Should-fix edits, lints what changed, and re-runs the affected tests to confirm. It works only on your own branch, never on someone else\'s PR.', ex:[["review and fix in one command", "/qa-kit:apply-review-fixes review PR #123 and fix what you find"], ["your own branch", "/qa-kit:apply-review-fixes review the diff on this branch before I open a PR"], ["reuse findings from a review you already ran, instead of reviewing again", "/qa-kit:apply-review-fixes"]], who:'agent: agent-reviewer'},
     {n:'write-commit-message', p:'Deliver', d:'Draft a commit message from the real diff.', more:'Conventional Commits with the ticket key from the branch name. It only drafts. It never stages, commits or pushes.', ex:[["draft a message from the real diff; never commits", "/qa-kit:write-commit-message"]], who:'you start it. Never auto-invoked'},
     {n:'commit-and-push', p:'Deliver', d:'Commit specific files, push only on request.', more:'Stages by path and commits with a drafted message. A confirmation comes before any push, unless the run was started with an explicit --push.', ex:[["commit with a drafted message, then ask before pushing", "/qa-kit:commit-and-push"], ["commit with your own message", "/qa-kit:commit-and-push \"fix(checkout): correct cart total rounding\""]], who:'you start it. Never auto-invoked'},
     {n:'create-pr', p:'Deliver', d:'Self-review, then open the pull request.', more:'Runs the review and fix gate first, detects the real default branch, drafts the title and body with a self-review line, confirms, then runs gh pr create. Inside a pipeline, an unresolved Blocking finding ends the stage blocked instead of opening the PR.', ex:[["self-review gate, commit, push, open the PR; confirms before pushing and before opening", "/qa-kit:create-pr"], ["with your own commit message and PR title", "/qa-kit:create-pr \"fix(checkout): correct cart total rounding\" \"Fix cart total rounding\""], ["skip the self-review gate, only when you say so; the report notes it", "/qa-kit:create-pr open the PR as-is, skip self-review"]], who:'you start it. Never auto-invoked'},
     {n:'init', p:'Setup', d:'Set up or update the repo layer.', more:'Writes the instructions, permissions, MCP servers and conventions your repo needs, through a plan you review and accept file by file. Ends every run with a report of what to commit and what your ignore rules swallow.', ex:[["set up or update the repo, through a plan you review", "/qa-kit:init"], ["preview the plan and write nothing", "/qa-kit:init --dry-run"], ["a repo that is not only test automation: install in one subfolder", "/qa-kit:init --path=automation"], ["choose which agents the team uses", "/qa-kit:init --agents claude,opencode"], ["name the kit repository explicitly", "/qa-kit:init --kit-url <git url>"], ["no repo: register the tool servers on your machine", "/qa-kit:init --user --servers glean_default,figma"]], who:'you start it. Never auto-invoked'},
-    {n:'help', p:'Setup', d:'See everything qa-kit can do, on one screen.', more:'One short screen with the recommended path first, the four flows with their flags, every skill in one line, and examples. Add a name for up to 15 lines on one flow or skill, read from the kit\'s own files so it cannot drift. It changes nothing and runs nothing.', ex:[["the one-screen overview", "/qa-kit:help"], ["detail on one flow", "/qa-kit:help feature-implement"], ["detail on one skill", "/qa-kit:help heal-tests"]], who:'prints only'}
+    {n:'help', p:'Setup', d:'See everything qa-kit can do, on one screen.', more:'One short screen with the recommended path first, the six flows with their flags, every skill in one line, and examples. Add a name for up to 15 lines on one flow or skill, read from the kit\'s own files so it cannot drift. It changes nothing and runs nothing.', ex:[["the one-screen overview", "/qa-kit:help"], ["detail on one flow", "/qa-kit:help feature-implement"], ["detail on one skill", "/qa-kit:help heal-tests"]], who:'prints only'}
   ];
 
-  var phases = ['All','Plan','Build','Prove','Explore','Review','Deliver','Setup'];
+  var phases = ['All','Plan','Build','Prove','Explore','Changes','Review','Deliver','Setup'];
   var fch = document.getElementById('fchips'), list = document.getElementById('skillList'), cur='All';
   function drawSkills(){
     list.innerHTML = skills.filter(function(s){return cur==='All'||s.p===cur;}).map(function(s){

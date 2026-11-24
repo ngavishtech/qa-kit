@@ -4,21 +4,21 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as claude from './lib/adapters/claude.mjs'
 import * as opencode from './lib/adapters/opencode.mjs'
-import { authorization, snapshot, verify } from './lib/guard.mjs'
+import { READ_ONLY_STRICT, authorization, snapshot, verify } from './lib/guard.mjs'
 import { parseCli, splitArgs } from './lib/parse.mjs'
 import { killAll } from './lib/process.mjs'
 import { makeRuntime } from './lib/shims.mjs'
-import { ensureArtifacts, resolveInputs, saveRun } from './lib/state.mjs'
+import { ensureArtifacts, finishChangeRun, resolveInputs, saveRun, startChangeRun } from './lib/state.mjs'
 
 export { parseCli } from './lib/parse.mjs'
 
 const ADAPTERS = { claude, opencode }
-const USAGE = `usage: node runner/qa-kit.mjs <feature-plan|feature-implement|feature-deliver|feature-monkey> [items and flags] --agent claude|opencode
+const USAGE = `usage: node runner/qa-kit.mjs <feature-plan|feature-implement|feature-deliver|feature-monkey|feature-diff|feature-select> [items and flags] --agent claude|opencode
   run options: --agent NAME (required)  --model ID  --cwd DIR  --timeout MINUTES  --dry-run
   argument text: --args-stdin (read the items and flags from stdin)  --args-file PATH (read them from a file)
     the text is split like a shell would, without expanding anything, and appended to the other arguments; use at most one of the two
   see commands/<workflow>.md for the workflow flags (value flags are written --name=value)`
-const SUMMARY_FIELDS = ['planPath', 'testType', 'level', 'branch', 'worktreePath', 'stage', 'coverageGaps', 'handChanges', 'skippedPaths', 'committed', 'pushed', 'prUrl', 'reportPath', 'findingsPlanPath', 'findingsSummary', 'cleanup', 'leftBehind', 'blockReason']
+const SUMMARY_FIELDS = ['planPath', 'testType', 'level', 'branch', 'worktreePath', 'stage', 'coverageGaps', 'handChanges', 'skippedPaths', 'committed', 'pushed', 'prUrl', 'reportPath', 'findingsPlanPath', 'findingsSummary', 'cleanup', 'leftBehind', 'coverage', 'planFailures', 'mode', 'fallbackReason', 'confidence', 'selectedFiles', 'suiteFiles', 'selectionFile', 'argsFile', 'handoffFile', 'gaps', 'plans', 'implementCommand', 'affectedRun', 'blockReason']
 
 function readMeta(source) {
   const match = /^export const meta = (\{[\s\S]*?\n\})/m.exec(source)
@@ -88,11 +88,13 @@ async function execute({ workflow, args, options, cwd, agent }) {
     model: options.model,
     cwd,
     policy: authorization(args, workflow),
+    readOnly: READ_ONLY_STRICT.includes(workflow) ? { strict: true, allowFetch: args.fetch === true } : undefined,
     timeoutMs: options.timeoutMs,
     log: stderrLog,
   })
   adapter.preflight()
   ensureArtifacts(cwd)
+  startChangeRun({ workflow, cwd })
   const before = snapshot(cwd)
   const startedAt = new Date()
   let report = []
@@ -103,6 +105,7 @@ async function execute({ workflow, args, options, cwd, agent }) {
     failure = err
   }
   const warnings = []
+  if (!failure) finishChangeRun({ workflow, args, report, cwd, warn: message => warnings.push(message) })
   const violations = verify({ before, workflow, report, args, cwd, warn: message => warnings.push(message) })
   const runDir = saveRun({ cwd, workflow, startedAt, args, report, violations, warnings })
   if (failure) throw failure

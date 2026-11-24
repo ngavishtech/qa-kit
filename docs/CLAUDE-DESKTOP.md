@@ -61,8 +61,8 @@ Organization settings, **Plugins & skills**, **Add**, **Upload a plugin** (or sy
 | Component | Chat | Cowork | Code tab |
 |---|---|---|---|
 | Skills (`help`, `plan-tests`, `read-ticket`, `write-tests`, `review-tests`, `create-pr`, ...) | loads | loads | loads |
-| Commands (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`) | loads as skills | loads | loads |
-| Agents (`agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`) | ignored | loads | loads |
+| Commands (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`, `feature-select`, `feature-diff`) | loads as skills | loads | loads |
+| Agents (`agent-planner`, `agent-writer`, `agent-executor`, `agent-reviewer`, `agent-deliverer`, `agent-triager`, `agent-defect-retester`, `agent-monkey`, `agent-change-analyst`) | ignored | loads | loads |
 | Workflows (the parallel pipeline in `workflows/*.js`) | **unconfirmed, assume no** | **unconfirmed, assume no** | **unconfirmed**, the terminal and IDE are the tested route |
 | Paths from skills to the plugin's `patterns/` folder | **unconfirmed** | **unconfirmed** | works |
 

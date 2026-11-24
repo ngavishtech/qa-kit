@@ -159,6 +159,17 @@ Keep your `on:` block, `concurrency`, `permissions` and dispatch inputs; replace
 | Runner never starts | `DEFAULT_LINUX_RUNNER_LABEL` is not visible to this repo |
 | Slack message has no report link | the report was not published (`publish: false`, or the Pages deploy failed) |
 
+## TODO: running only the tests a change affects
+
+Not built yet. `feature-select` (see "Change-driven testing" in the main README) writes `qa-kit-artifacts/changes/selection.json` and `selection.args`; connecting them to these actions is open until the CI system and template are decided (GitHub Actions or Jenkins). What is missing here:
+
+- `playwright-docker-run` has no changed-files or selection input: it builds its arguments from the tag filters (`scripts/build-test-grep.js`, owned by the consumer) or `playwright-arguments`. A selection (`--project=... <spec files>`) would be passed as `playwright-arguments` or a new input.
+- Its "0 tests matched the selected filters" guard fails the job, so a `none` selection ("no scope identified": nothing changed, or only documentation) needs an explicit skip path (do not call the action at all), and a `full` selection means no filter.
+- The checkout needs history: `fetch-depth: 0`. A shallow clone is blocked by the analysis, not guessed.
+- A pull-request-triggered caller workflow (`templates/github/run-tests.yml` only has `schedule` and `workflow_dispatch`) with a step that runs the runner, with enough checkout history (`fetch-depth`) and `GH_TOKEN` for `gh`.
+- A step that reads `handoff.json` and starts `feature-implement` on its plans, with `--commit`, `--push` or `--pr` passed explicitly.
+- Rule for any consumer: a non-zero exit, a blocked entry or a missing `selection.json` means run the full suite.
+
 ## Checking changes in this repo
 
 `ci.yml` runs `node --test` on pull requests. The actions themselves are not executed here. Before tagging, run `actionlint` against `actions/*/action.yml` and `templates/github/run-tests.yml` if you have it installed, and do one real run from a test repo. The checks to confirm on that first run are in the README's pilot checklist.

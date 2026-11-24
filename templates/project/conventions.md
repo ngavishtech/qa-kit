@@ -40,6 +40,7 @@ Skills find your existing helpers by purpose (see the plugin's `patterns/helper-
 |---|---|
 | Run all tests | `npm run tests` |
 | Smoke only | `npm run test:smoke` |
+| Smoke tag (the tag that marks smoke-level tests, without the `@`; `select-tests` adds those specs of the affected features) | `smoke` |
 | List tests (exact index of existing tests; no browser needed; add `--grep @feature-tag` in a large repo) | `npx playwright test --list --reporter=json` |
 | Lint | `npm run lint` |
 | Lint (auto-fix) | `npm run lint:fix` |

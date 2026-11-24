@@ -1,6 +1,6 @@
 ---
 name: help
-description: Shows what qa-kit can do on one screen - the recommended path, the four flows (feature-plan, feature-implement, feature-deliver, feature-monkey), every skill in one line, init, and example commands - or the flags and examples of one named flow or skill. Use when asked what qa-kit can do, how to start, which command to use, or what a command or skill does.
+description: Shows what qa-kit can do on one screen - the recommended path, the six flows (feature-plan, feature-implement, feature-deliver, feature-monkey, feature-select, feature-diff), every skill in one line, init, and example commands - or the flags and examples of one named flow or skill. Use when asked what qa-kit can do, how to start, which command to use, or what a command or skill does.
 argument-hint: '[flow or skill name]'
 allowed-tools: Read, Glob
 ---
@@ -36,6 +36,11 @@ FLOWS (several features at once, in parallel)
                       --push  --pr  --no-apply   (name a branch or ticket to deliver just that one)
   feature-monkey      monkey-test areas of the running app, in parallel; creates and removes only its own data
                       --minutes=N (default 5, max 30)  --guidance="text"  --read-only  --seed=N  --parallel=N
+  feature-select      what do my changes affect, which tests should CI run? read-only; unsure means the full suite,
+                      nothing changed means run nothing   <PR numbers>  --base=ref  --since=N  --repo=org/app (repeatable)
+                      --plan  --no-smoke  --threshold=P  --min-confidence=high  --fetch
+  feature-diff        from the code changes (not a ticket): what is not covered yet? plans the gaps, stops at plan review
+                      same sources as feature-select  --run-affected  --no-select
 
 SKILLS (one step at a time, you stay in control)
   Plan            read-ticket        digest a Jira ticket: criteria, scope, open questions
@@ -51,15 +56,17 @@ SKILLS (one step at a time, you stay in control)
                   write-commit-message  draft a commit message from the real diff
                   commit-and-push    stage by name, commit, push (asks before pushing)
                   create-pr          self-review gate, commit, push, open the PR
-  After a run     triage-failure     read a failed Allure report, retest only what failed, advise per
-                                     group (bug, known issue, deviation, gap, tune the test, flaky), draft Jira tickets
+  After a run     triage-failure     read a failed Allure report, retest only what failed, advise per group (bug,
+                                     known issue, deviation, gap, tune the test, flaky), draft Jira tickets
                                      --known=ABC-1,ABC-2   --heal   --no-retest
-  Explore         monkey-test        explore one area of the live app like a monkey: understands each page first,
-                                     time-boxed, cleans up after itself; report and findings plan in qa-kit-artifacts/monkey/
+  Explore         monkey-test        explore one area of the live app like a monkey: understands each page first, time-boxed,
+                                     cleans up after itself; report and findings plan in qa-kit-artifacts/monkey/
                                      --minutes=N  --guidance="text"  --read-only  --seed=N  --no-cache
-  Defects         retest-defect      reproduce one Jira defect live: does it reproduce, is the flow covered by
-                                     tests; offers to plan a regression test, never files or edits Jira
+  Defects         retest-defect      reproduce one Jira defect live: does it reproduce, is the flow covered by tests;
+                                     offers to plan a regression test, never files or edits Jira
                                      --plan  --no-plan  --read-only  --guidance="text"
+  Changes         analyze-changes    what do your checkout, a branch, PRs or the last N days affect; is it covered? (read-only)
+                  select-tests       the narrowest safe run for them, decided by a tested script; the full suite when unsure
 
 SETUP AND HELP
   init               set up or update this repo; --path <folder> for a repo that is not only automation,
@@ -76,9 +83,12 @@ EXAMPLES
   /qa-kit:retest-defect ABC-1234                        is this defect real, and do we have a test for it?
   /qa-kit:monkey-test checkout --minutes=5 --guidance="odd quantities and coupons"
   /qa-kit:feature-monkey checkout "order history" --read-only
+  /qa-kit:feature-select --base=origin/main          which tests does my checkout need? (vs a local or remote branch)
+  /qa-kit:feature-diff --since=7 --run-affected      last 7 days: gaps planned, affected tests run once
+  /qa-kit:feature-select --repo=org/app 456 --plan   PR 456 of the app repo (GitHub): scope and plans
 
-SAFE BY DEFAULT: nothing is committed unless you add --commit/--push/--pr (or run feature-deliver),
-nothing is pushed or turned into a PR unless you ask, planning never touches git,
+SAFE BY DEFAULT: nothing is committed unless you add --commit/--push/--pr (or run feature-deliver), nothing is pushed or
+turned into a PR unless you ask, planning and change analysis never touch git (unsure means the full suite),
 and monkey runs refuse production-looking URLs and never delete or change data they did not create.
 MORE: README.md (install, setup, update), patterns/usage-examples.md (real scenarios with output)
 ```
@@ -87,9 +97,9 @@ MORE: README.md (install, setup, update), patterns/usage-examples.md (real scena
 
 `<name>` may be written with or without the leading slash and prefix (`feature-implement`, `/qa-kit:feature-implement`, `heal-tests`, `init`). Print at most 15 lines, plain text, no preamble: what it is for (one sentence), its flags, and two example lines. Read the facts from the plugin so they cannot drift:
 
-- **A flow** (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`): the rows of the flag table in `${CLAUDE_PLUGIN_ROOT}/patterns/workflows-reference.md` ("Workflow arguments") whose Workflows column names that flow or all of them, one line per flag with its default; two example commands from `${CLAUDE_PLUGIN_ROOT}/patterns/usage-examples.md` that start with that flow's name.
+- **A flow** (`feature-plan`, `feature-implement`, `feature-deliver`, `feature-monkey`, `feature-select`, `feature-diff`): the rows of the flag table in `${CLAUDE_PLUGIN_ROOT}/patterns/workflows-reference.md` ("Workflow arguments") whose Workflows column names that flow or all of them, one line per flag with its default; two example commands from `${CLAUDE_PLUGIN_ROOT}/patterns/usage-examples.md` that start with that flow's name.
 - **A skill** (including `init` and `help`): read `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md`; use the first sentence of its description, the options named in its "How this skill is invoked" section, and the example invocations shown there.
-- **A name that matches neither**: say "No flow or skill named <name>." and list the three to five closest names (use `Glob` on `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md` for the skill names; the flows are the four above), then point at `/qa-kit:help`.
+- **A name that matches neither**: say "No flow or skill named <name>." and list the three to five closest names (use `Glob` on `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md` for the skill names; the flows are the six above), then point at `/qa-kit:help`.
 
 If a fact is not in those files, leave it out; never fill a gap from memory.
 

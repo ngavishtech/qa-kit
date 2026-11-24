@@ -37,6 +37,7 @@ Parse flags out of `$ARGUMENTS` (order doesn't matter, plain-text NLP, not stric
 - `--agent-prefix=<p>` present -> `args.agentPrefix` (default `qa-kit:`; `--agent-prefix=` for none; only needed if a run reports "unknown agent type")
 - `--no-apply` present -> `args.apply: false`
 - `--apply` present (and `--no-apply` isn't) -> omit `args.apply` entirely (it's already the default - don't pass `true` as noise)
+A value flag given twice (for example `--parallel=2 --parallel=3`) is an error: stop and say so, never keep one silently.
 - None of these present -> omit them entirely (commits locally, default concurrency, applying on)
 
 Run it by calling the `Workflow` tool with `scriptPath: '${CLAUDE_PLUGIN_ROOT}/workflows/feature-deliver.js'` (preferred: it loads the plugin's script directly, so no workflow-name lookup is involved; if that path cannot be read, fall back to `name: 'feature-deliver'`, then `qa-kit:feature-deliver`) and `args: { targets: [...], push, createPr, maxParallel, apply, agentPrefix }` (only include the flags actually parsed above - don't pass `push: false`/`apply: true` etc. as noise).

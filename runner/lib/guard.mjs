@@ -85,20 +85,31 @@ function defaultBranchViolations(before, cwd) {
   return [`default branch ${before.defaultBranch} moved from ${before.defaultSha.slice(0, 8)} to ${now?.slice(0, 8) ?? 'nothing'}: a commit landed on it`]
 }
 
-// Read-only workflows (feature-plan, feature-monkey) may write only inside the artifacts folder. Git cannot see inside that
-// self-ignoring folder, so staying inside qa-kit-artifacts/monkey/ is a rule of the skill, not something checked here.
-function readOnlyViolations(before, cwd, workflow) {
+// Read-only workflows (feature-plan, feature-monkey, feature-diff, feature-select) may write only inside the artifacts folder.
+// Git cannot see inside that self-ignoring folder, so staying inside qa-kit-artifacts/monkey/ or qa-kit-artifacts/changes/ is a
+// rule of the skill, not something checked here.
+// The change flows are read-only in the strictest sense: also no new or moved branch and no .env change. With --run-affected a test run
+// writes its own output folders, which are not a change of the code under test.
+export const READ_ONLY_STRICT = ['feature-diff', 'feature-select']
+const TEST_OUTPUT = /(^|\/)(test-results|playwright-report|blob-report|allure-results|allure-report)\/?$/
+
+function readOnlyViolations(before, cwd, workflow, args = {}) {
   const after = workingState(cwd)
-  const changed = [...before.status.filter(line => !after.status.includes(line)), ...after.status.filter(line => !before.status.includes(line))]
+  const strict = READ_ONLY_STRICT.includes(workflow)
+  const keep = args.runAffected === true ? line => !TEST_OUTPUT.test(line.slice(3)) : () => true
+  const was = before.status.filter(keep)
+  const now = after.status.filter(keep)
+  const changed = [...was.filter(line => !now.includes(line)), ...now.filter(line => !was.includes(line))]
   const violations = []
   if (changed.length) violations.push(`${workflow} changed files outside ${ARTIFACTS_PREFIX}: ${[...new Set(changed.map(line => line.slice(3)))].join(', ')}`)
   else if (after.diffHash !== before.diffHash) violations.push(`${workflow} edited tracked files outside ${ARTIFACTS_PREFIX}`)
   if (after.head !== before.head || after.branch !== before.branch) violations.push(`${workflow} moved HEAD or switched branch`)
-  if (workflow === 'feature-monkey' && after.envHash !== before.envHash) violations.push('feature-monkey changed the .env file')
+  if ((workflow === 'feature-monkey' || strict) && after.envHash !== before.envHash) violations.push(`${workflow} changed the .env file`)
+  if (strict && JSON.stringify(localHeads(cwd)) !== JSON.stringify(before.localHeads)) violations.push(`${workflow} created, moved or deleted a local branch`)
   return violations
 }
 
-const READ_ONLY_WORKFLOWS = ['feature-plan', 'feature-monkey']
+const READ_ONLY_WORKFLOWS = ['feature-plan', 'feature-monkey', 'feature-diff', 'feature-select']
 
 function branchEntries(workflow, report, args) {
   return report
@@ -216,7 +227,7 @@ function handChangeWarnings({ before, entries, cwd, warn }) {
 
 export function verify({ before, workflow, report, args, cwd, warn = () => {} }) {
   const violations = defaultBranchViolations(before, cwd)
-  if (READ_ONLY_WORKFLOWS.includes(workflow)) return [...violations, ...readOnlyViolations(before, cwd, workflow)]
+  if (READ_ONLY_WORKFLOWS.includes(workflow)) return [...violations, ...readOnlyViolations(before, cwd, workflow, args)]
   const entries = branchEntries(workflow, report, args)
   const allowed = authorization(args, workflow)
   return [

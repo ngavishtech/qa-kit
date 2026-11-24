@@ -189,7 +189,7 @@ test('a launcher that cannot take the arguments stops the run before any stage',
 })
 
 test('every OpenCode wrapper passes the arguments through a quoted heredoc and never on the command line', () => {
-  for (const name of ['feature-plan', 'feature-implement', 'feature-deliver', 'feature-monkey']) {
+  for (const name of ['feature-plan', 'feature-implement', 'feature-deliver', 'feature-monkey', 'feature-diff', 'feature-select']) {
     const text = readFileSync(new URL(`../../opencode/commands/${name}.md`, import.meta.url), 'utf8')
     const command = `node "@QA_KIT_ROOT@/runner/qa-kit.mjs" ${name} --agent opencode --args-stdin <<'QA_KIT_ARGS'\n$ARGUMENTS\nQA_KIT_ARGS\n`
     assert.ok(text.includes(command), name)

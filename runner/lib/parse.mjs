@@ -9,6 +9,14 @@ export const WORKFLOWS = {
     switches: ['read-only', 'no-cache'],
     values: ['minutes', 'unit-minutes', 'guidance', 'seed', 'parallel', 'agent-prefix'],
   },
+  'feature-diff': {
+    switches: ['fetch', 'no-smoke', 'no-select', 'run-affected'],
+    values: ['base', 'head', 'since', 'repo', 'threshold', 'min-confidence', 'parallel', 'agent-prefix'],
+  },
+  'feature-select': {
+    switches: ['fetch', 'no-smoke', 'plan'],
+    values: ['base', 'head', 'since', 'repo', 'threshold', 'min-confidence', 'parallel', 'agent-prefix'],
+  },
 }
 
 export const AGENTS = ['claude', 'opencode']
@@ -23,6 +31,11 @@ const SWITCH_ARGS = {
   'no-apply': { apply: false },
   'read-only': { readOnly: true },
   'no-cache': { noCache: true },
+  fetch: { fetch: true },
+  'no-smoke': { smoke: false },
+  'no-select': { select: false },
+  'run-affected': { runAffected: true },
+  plan: { planGaps: true },
 }
 
 function nonEmpty(value, flag) {
@@ -43,6 +56,35 @@ function monkeyMinutes(value, flag) {
   return minutes
 }
 
+export const MAX_SINCE_DAYS = 365
+
+function sinceDays(value, flag) {
+  const days = positiveInt(value, flag)
+  if (days > MAX_SINCE_DAYS) throw new Error(`${flag} is at most ${MAX_SINCE_DAYS} days`)
+  return days
+}
+
+function percent(value, flag) {
+  const number = positiveInt(value, flag)
+  if (number > 100) throw new Error(`${flag} needs a percent from 1 to 100`)
+  return number
+}
+
+export const REPO_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*$/
+
+function repoName(value, flag) {
+  if (!REPO_NAME.test(value)) throw new Error(`${flag} must look like org/app`)
+  return value
+}
+
+export const CONFIDENCES = ['high', 'medium']
+
+function minConfidence(value, flag) {
+  const lower = value.toLowerCase()
+  if (!CONFIDENCES.includes(lower)) throw new Error(`${flag} needs high or medium`)
+  return lower
+}
+
 export const LEVELS = ['smoke', 'sanity', 'regression']
 
 function level(value, flag) {
@@ -50,6 +92,9 @@ function level(value, flag) {
   if (!LEVELS.includes(lower)) throw new Error(`${flag} needs ${LEVELS.slice(0, -1).join(', ')} or ${LEVELS.at(-1)}`)
   return lower
 }
+
+// Flags that may be given more than once collect into an array; any other value flag given twice is an error, never a silent last-one-wins.
+const REPEATABLE = new Set(['repo'])
 
 const VALUE_ARGS = {
   level: ['level', level],
@@ -60,6 +105,11 @@ const VALUE_ARGS = {
   parallel: ['maxParallel', positiveInt],
   'agent-prefix': ['agentPrefix', value => value],
   base: ['baseRef', nonEmpty],
+  head: ['headRef', nonEmpty],
+  since: ['since', sinceDays],
+  repo: ['repos', repoName],
+  threshold: ['threshold', percent],
+  'min-confidence': ['minConfidence', minConfidence],
   'worktree-dir': ['worktreeDir', nonEmpty],
   install: ['installCommand', nonEmpty],
 }
@@ -170,7 +220,10 @@ function applyFlag(token, workflow, args) {
     Object.assign(args, SWITCH_ARGS[name])
   } else if (value !== undefined && spec.values.includes(name)) {
     const [key, convert] = VALUE_ARGS[name]
-    args[key] = convert(value, `--${name}`)
+    const converted = convert(value, `--${name}`)
+    if (REPEATABLE.has(name)) (args[key] ??= []).push(converted)
+    else if (key in args) throw new Error(`--${name} was given twice: it takes one value`)
+    else args[key] = converted
   } else {
     throw new Error(`${token} is not a valid flag for ${workflow} (value flags are written --name=value)`)
   }

@@ -27,7 +27,7 @@ Parse `$ARGUMENTS` in three steps:
 
 ### Step 1: Extract run-level flags (`--parallel=N`, `--agent-prefix=<p>`), if present, before anything else
 
-Search the whole string for `--parallel=<number>` (it can appear anywhere - before, inside, or after any `--plan` block). If found, set `args.maxParallel` to that number and **remove it from the string** before Step 2 - it's a run-level setting, not a feature source, and must never end up inside a `jiraKeys`/`descriptions`/etc. array. If absent, omit `args.maxParallel` entirely (default concurrency, 3).
+A value flag given twice (for example `--parallel=2 --parallel=3`) is an error: stop and say so, never keep one silently. Search the whole string for `--parallel=<number>` (it can appear anywhere - before, inside, or after any `--plan` block). If found, set `args.maxParallel` to that number and **remove it from the string** before Step 2 - it's a run-level setting, not a feature source, and must never end up inside a `jiraKeys`/`descriptions`/etc. array. If absent, omit `args.maxParallel` entirely (default concurrency, 3).
 
 Do the same for `--agent-prefix=<p>` -> `args.agentPrefix` (the plugin namespace the workflow puts in front of agent names; default `qa-kit:`; `--agent-prefix=` with nothing after it means no prefix). It exists only as the remedy when a run reports "unknown agent type" - omit it otherwise.
 
